@@ -1,0 +1,41 @@
+{
+  "outputs": [
+    "packages/shell/pwsh-local/src/index.ts",
+    "packages/shell/pwsh-local/lib/index.js",
+    "packages/shell/pwsh-local/lib/types/index.js",
+    "packages/shell/pwsh-local/lib/types/index.d.ts",
+    "packages/sandbox/sandbox-windows-acl/src/ffi.ts",
+    "packages/sandbox/sandbox-windows-acl/src/runner.ts",
+    "packages/sandbox/sandbox-windows-acl/lib/index.js",
+    "packages/sandbox/sandbox-windows-acl/lib/runner.js",
+    "packages/sandbox/sandbox-windows-acl/lib/types/ffi.js",
+    "packages/sandbox/sandbox-windows-acl/lib/types/ffi.d.ts",
+    "packages/sandbox/sandbox-windows-acl/lib/types/runner.js",
+    "packages/sandbox/sandbox-windows-acl/lib/types/runner.d.ts"
+  ],
+  "hashes": {
+    "packages/sandbox/sandbox-windows-acl/lib/index.js": "b6e4083c89c8b616b73f51b58df550b85826f56564fcbabc88ed6c79bc4f0480",
+    "packages/sandbox/sandbox-windows-acl/lib/runner.js": "4cddd02e292d2d4edc25e260b6a0a387b404818e995fb9b82e6194ad8005a7de",
+    "packages/sandbox/sandbox-windows-acl/lib/types/ffi.d.ts": "dcbee2075443ab0f69efd586cbf9fe7f416926e404e21382d3f1be51d38dc6c8",
+    "packages/sandbox/sandbox-windows-acl/lib/types/ffi.js": "304c9acf958c83a86215e5bad0c30ade3d425db1c213ce56d3de88b8c152cc4e",
+    "packages/sandbox/sandbox-windows-acl/lib/types/runner.d.ts": "39552918fe5be1ea71eadd74a0545fd5019041932a23e5812a20ff3c96f38c80",
+    "packages/sandbox/sandbox-windows-acl/lib/types/runner.js": "9480170dd4757aee395f31d7232f2790f898ce48ee947ada60551210e4ac8ae3",
+    "packages/sandbox/sandbox-windows-acl/package.json": "c0f836a785545aaffa0aa285287fabe917a20795da481b3f8879b97f033e5343",
+    "packages/sandbox/sandbox-windows-acl/src/acl.ts": "d8394cf153bc941fa080044eb5e7df152028325b830234eb2a2fc859588ae740",
+    "packages/sandbox/sandbox-windows-acl/src/ffi.ts": "c00ef2456ec0270c654a5561ed51dd3ffab6f80e9330f6490cde852192af4755",
+    "packages/sandbox/sandbox-windows-acl/src/grant.ts": "277eaabceccf9db675b487b96ad670c039ead00cec562d90d25b2547e72e76fd",
+    "packages/sandbox/sandbox-windows-acl/src/index.ts": "7af7d5d12c8e9347b4880dc939815fea9b8f7ab45d7dc80fe868e5fee4c1bdc4",
+    "packages/sandbox/sandbox-windows-acl/src/path-boundary.ts": "42f3b93dd357bebda4eb9268361fad9a64982cfdf0f14518386e797b76654296",
+    "packages/sandbox/sandbox-windows-acl/src/runner.ts": "542b77278d974f5f93c2a0b925468e96e52737366ed88df7d118a5af67c2eff0",
+    "packages/sandbox/sandbox-windows-acl/src/spawn.ts": "a72479eb80e2c8bb081373d1ed94f5b074c22bb3de4aa317cfbf0f5786b9c3f6",
+    "packages/sandbox/sandbox-windows-acl/src/token.ts": "f409a9fbd344c1f6a3179eef2c422ec34933f2f3865bf065506bdba88212455e",
+    "packages/sandbox/sandbox-windows-acl/src/win32-abi.ts": "88dcae2450bef438eef99333d6d87d957214d3d2db8e035b86ebb147b75dd2d1",
+    "packages/sandbox/sandbox-windows-acl/src/workspace-sid.ts": "7332eef52a304789921e104b1ca38246ea8b44673ea08e952bc43791a9af6411",
+    "packages/shell/pwsh-local/lib/index.js": "c30d44546191cabd63207d2f7c1c5b31baa63c881fbd8d29f90203a0721f977a",
+    "packages/shell/pwsh-local/lib/types/index.d.ts": "71ad2a3612fb2a8d119bd3109dcefe9f3fa32ca3ca7093aeee17d1424858c3f3",
+    "packages/shell/pwsh-local/lib/types/index.js": "f5d896c6b9672a53558f3d3b265343a4280cf191156da312d3436fdf98ec4ed3",
+    "packages/shell/pwsh-local/package.json": "95c8b98d5b4c9078bc9f7b986519638b299a12b479db4b45f52d3c061fa68a12",
+    "packages/shell/pwsh-local/src/index.ts": "aefd52102ec21d6b120a5697eae6a2acdc126b9e6609d27a66b0fb818c4ffb60",
+    "packages/shell/pwsh-local/src/resolve.ts": "5c832a5a3cd944735dca27e608b40a1fd5e259ed5629b8c92d0ae899157fcf37"
+  }
+}

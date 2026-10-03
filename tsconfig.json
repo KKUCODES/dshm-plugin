@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "ES2023", "jsx": "react-jsx", "module": "NodeNext", "moduleResolution": "NodeNext",
+    "strict": true, "noUncheckedIndexedAccess": true, "skipLibCheck": true, "esModuleInterop": true,
+    "declaration": true, "sourceMap": true, "experimentalDecorators": false,
+    "rootDir": "src", "outDir": "dist"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

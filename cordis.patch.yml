@@ -1,0 +1,5 @@
+- insert:
+    - id: dsh-mobile
+      name: '@dsh-mobile/plugin'
+      config:
+        enrollmentRef: DSH_MOBILE_ENROLLMENT_TOKEN

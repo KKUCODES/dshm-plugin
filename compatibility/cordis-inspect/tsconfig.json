@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.check.json",
+  "compilerOptions": { "rootDir": "../..", "allowImportingTsExtensions": true },
+  "include": ["./remote.test.ts", "../../artifacts/compatibility/cordis-inspect/src/index.ts"]
+}
