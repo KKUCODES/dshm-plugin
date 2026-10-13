@@ -30,7 +30,7 @@ pnpm dsh web
 
 ### 选择中转服务
 
-**推荐自行搭建**，方便管理服务、数据与访问策略。搭建方式见[后端说明](../../backend/README.md)。
+**推荐自行搭建**，方便管理服务、数据与访问策略。搭建方式见[后端说明](https://github.com/KKUCODES/dshm-relay)。
 
 不想自行搭建时，可使用项目维护者提供的[公共中转服务](http://118.31.20.47:18787)。在插件“服务地址”填写以下根地址：
 
@@ -55,7 +55,7 @@ http://118.31.20.47:18787
 
 服务地址填写根地址，不加路径、查询参数或配对密钥。HTTP 和 HTTPS 均支持；HTTP 连接时会提示内容未加密。手机上的 `127.0.0.1` 指向手机自己，仅在同一台电脑或配置了测试映射时才适用。
 
-如果需要运行本项目后端，数据库和地址配置见[后端说明](../../backend/README.md)及[配置样例](../../backend/.env.example)。已有构建产物时，从后端目录启动：
+如果需要运行本项目后端，数据库和地址配置见[后端说明](https://github.com/KKUCODES/dshm-relay)及[配置样例](https://github.com/KKUCODES/dshm-relay/blob/main/.env.example)。已有构建产物时，从后端目录启动：
 
 ```powershell
 node --env-file=.env.local packages/gateway/dist/main.js

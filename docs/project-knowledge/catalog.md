@@ -2,6 +2,8 @@
 
 公开阅读入口：[项目首页](../../README.md)、[English](../../README.en.md)、[安装与使用](../usage.md)、[开发指南](../development.md)、[README 图片来源](../images/README.md)。首页只介绍产品和使用入口，构建与版本细节从独立指南进入；下方保留各阶段的技术依据。
 
+公开仓库：[手机端](https://github.com/KKUCODES/dshm) · [电脑插件](https://github.com/KKUCODES/dshm-plugin) · [中转服务](https://github.com/KKUCODES/dshm-relay)。首页和公开使用、开发指南按独立仓库链接；本总目录的历史资料仍按本地项目集合组织。
+
 中转服务选择：[自建推荐与公共服务地址](../usage.md#选择中转服务)。公共服务为可选入口，开放注册仍需手机配对与电脑批准；当前为 HTTP，不替代完整公网使用链路验收。
 
 中转地址修改：[同后端保留身份、新后端重新注册与失败保持](../../compatibility/latest-upstream/gateway-settings.md)，插件 `0.1.81-latest.0`。电脑设置页新增编辑、取消与两类确认；手机仍需使用新链接重新配对。独立专项不扩大此前完整手机能力的版本结论。

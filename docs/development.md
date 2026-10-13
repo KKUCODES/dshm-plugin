@@ -18,7 +18,7 @@ artifacts/            本地产物与验收证据，不提交 Git
 - Node.js 开发环境与依赖版本以 `package.json`、锁文件和候选构建脚本为准；当前候选构建目标为 Node 22。
 - 共享协议通过 `file:../backend/packages/protocol` 开发依赖引用。先在后端构建协议，再构建插件；运行时协议代码打包进插件，不要求用户安装这个私有开发包。
 - Cordis 与 DSH 包是宿主接口。当前新版候选使用单独准备的固定版本 SDK；不能混用旧版依赖或任意未来版本。
-- `src/client/` 是电脑上的插件配置页，不是手机客户端。客户端聊天布局、原生能力和 Remote 页面属于 [DSHM](../../dsh-mobile/README.md)。
+- `src/client/` 是电脑上的插件配置页，不是手机客户端。客户端聊天布局、原生能力和 Remote 页面属于 [DSHM](https://github.com/KKUCODES/dshm)。
 
 当前目录仍采用多仓库相邻布局，单独克隆本仓库不能一键生成当前候选。相邻项目和隔离 SDK 尚未收敛成独立公开构建流程。
 

@@ -2,6 +2,8 @@
 
 [简体中文](./README.md) | English
 
+[Android app](https://github.com/KKUCODES/dshm/blob/main/README.en.md) · **Desktop plugin** · [Relay server](https://github.com/KKUCODES/dshm-relay/blob/main/README.en.md)
+
 <p align="center">
   <img src="./docs/images/logo.png" width="128" height="128" alt="DSHM logo: the DeepSeek whale with a two-way phone and computer connection">
 </p>
@@ -30,7 +32,7 @@ A plugin for official DSH that connects computer conversations to the DSHM phone
 3. Claim the pairing link on your phone, then verify its fingerprint and approve it on the computer.
 4. Open an existing workspace on your phone to continue a conversation or start a new chat.
 
-**[Hosting your own relay](../backend/README.en.md) is recommended.** Alternatively, enter the [public service](http://118.31.20.47:18787) URL: `http://118.31.20.47:18787`. Open registration requires no enrollment token; devices still need pairing and approval. No user account is needed.
+**[Hosting your own relay](https://github.com/KKUCODES/dshm-relay/blob/main/README.en.md) is recommended.** Alternatively, enter the [public service](http://118.31.20.47:18787) URL: `http://118.31.20.47:18787`. Open registration requires no enrollment token; devices still need pairing and approval. No user account is needed.
 
 The public service uses HTTP, so transport is unencrypted. Use a self-hosted HTTPS relay for sensitive content. Keep the computer and DSH running. [Full setup instructions (Chinese)](./docs/usage.md)
 

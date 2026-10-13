@@ -2,6 +2,8 @@
 
 简体中文 | [English](./README.en.md)
 
+[手机端](https://github.com/KKUCODES/dshm) · **电脑插件** · [中转服务](https://github.com/KKUCODES/dshm-relay)
+
 <p align="center">
   <img src="./docs/images/logo.png" width="128" height="128" alt="DSHM Logo：DeepSeek 鲸鱼与手机、电脑双向连接">
 </p>
@@ -30,7 +32,7 @@
 3. 手机领取配对链接，电脑核对指纹并批准。
 4. 手机打开已有工作区，继续会话或创建新聊天。
 
-**推荐[自建中转](../backend/README.md)**；也可填[公共服务](http://118.31.20.47:18787) `http://118.31.20.47:18787`。开放注册免密，设备仍需配对与批准，无需用户账号。
+**推荐[自建中转](https://github.com/KKUCODES/dshm-relay)**；也可填[公共服务](http://118.31.20.47:18787) `http://118.31.20.47:18787`。开放注册免密，设备仍需配对与批准，无需用户账号。
 
 公共服务使用 HTTP，传输未加密。敏感内容建议自建 HTTPS。电脑和 DSH 必须保持运行。[完整安装步骤](./docs/usage.md)
 
