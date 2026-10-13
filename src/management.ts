@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { credentialKey, credentialRef, type CredentialProvider } from '@deepseek-ai/dsh-credentials'
 import { labelSchema, tokenSchema } from '@dsh-mobile/protocol'
@@ -13,6 +13,9 @@ const savedSchema = z.object({ origin: z.string(), name: labelSchema, hostId: z.
 const actions = z.discriminatedUnion('action', [
   z.object({ action: z.literal('server-info'), origin: z.string().max(2048) }).strict(),
   z.object({ action: z.literal('setup'), origin: z.string().max(2048), name: labelSchema, enrollmentToken: z.string().max(4096).optional() }).strict(),
+  z.object({ action: z.literal('change-origin'), origin: z.string().max(2048), expectedRevision: z.uuid(), confirmed: z.boolean() }).strict(),
+  z.object({ action: z.literal('replace-server'), origin: z.string().max(2048), name: labelSchema,
+    enrollmentToken: z.string().max(4096).optional(), expectedRevision: z.uuid(), confirmed: z.boolean() }).strict(),
   z.object({ action: z.enum(['enable', 'disable', 'pair']) }).strict(),
   z.object({ action: z.enum(['approve', 'revoke']), deviceId: z.uuid() }).strict(),
   z.object({ action: z.literal('management'), deviceId: z.uuid(), enabled: z.boolean() }).strict(),
@@ -26,6 +29,8 @@ export class Management {
   private operation: Promise<unknown> = Promise.resolve()
   private disposed = false
   private lifetime = new AbortController()
+  private revision = randomUUID()
+  get configRevision() { return this.revision }
   constructor(private credentials: Credentials, service: SessionService, private config: PluginConfig, services?: RemoteServices) { this.relay = new Relay(service, services) }
   async initialize() {
     const record = await this.credentials.readRecord(recordKey)
@@ -38,15 +43,16 @@ export class Management {
     }
   }
   private origin(raw: string) {
-    const url = new URL(raw)
+    let url: URL
+    try { url = new URL(raw) } catch { throw new Error('invalid_gateway_origin') }
     if (url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error('invalid_gateway_origin')
     if (!['http:', 'https:'].includes(url.protocol)) throw new Error('invalid_gateway_origin')
     return url.origin
   }
-  private async api(path: string, token?: string, method = 'GET', body?: unknown, origin = this.saved?.origin): Promise<unknown> {
+  private async api(path: string, token?: string, method = 'GET', body?: unknown, origin = this.saved?.origin, deadline?: AbortSignal): Promise<unknown> {
     if (!origin) throw new Error('not_configured')
     const response = await fetch(origin + path, { method, redirect: 'error',
-      signal: AbortSignal.any([this.lifetime.signal, AbortSignal.timeout(15000)]),
+      signal: AbortSignal.any([this.lifetime.signal, AbortSignal.timeout(15000), ...(deadline ? [deadline] : [])]),
       headers: { ...(token ? { authorization: 'Bearer ' + token } : {}), 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
       .catch((error: unknown) => { throw new Error(error instanceof Error && error.name === 'TimeoutError' ? 'gateway_timeout' : 'gateway_unreachable') })
     if (!response.ok) throw new Error(`gateway_http_${response.status}`)
@@ -63,22 +69,42 @@ export class Management {
     return JSON.parse(Buffer.concat(chunks).toString())
   }
   private async save(saved: z.infer<typeof savedSchema>) {
+    if (this.disposed) throw new Error('plugin_stopped')
     await this.credentials.modifyRecord(recordKey, async () => ({ kind: 'grant', payload: saved }))
     this.saved = saved
+    this.revision = randomUUID()
   }
-  private async serverInfo(origin: string) {
+  private async serverInfo(origin: string, deadline?: AbortSignal) {
     try {
-      return z.object({ registrationMode: z.enum(['open', 'private']) }).parse(await this.api('/v1/server-info', undefined, 'GET', undefined, origin))
+      return z.object({ registrationMode: z.enum(['open', 'private']) }).parse(await this.api('/v1/server-info', undefined, 'GET', undefined, origin, deadline))
     } catch (error) {
       // 旧版网关只有个人注册；仅明确的 404 才使用兼容模式，网络错误不可当作开放。
       if (error instanceof Error && error.message === 'gateway_http_404') return { registrationMode: 'private' as const }
       throw error
     }
   }
+  private async enroll(origin: string, name: string, enrollmentToken?: string, allowLocalCredential = false, deadline?: AbortSignal) {
+    // 提交时重新读取后端模式，客户端不能自行选择免密；开放模式不读取或发送注册密钥。
+    const { registrationMode } = await this.serverInfo(origin, deadline)
+    let bootstrap: string | undefined
+    if (registrationMode === 'private') {
+      bootstrap = enrollmentToken?.trim()
+      if (!bootstrap && allowLocalCredential) {
+        try { bootstrap = (await this.credentials.resolve(credentialRef(this.config.enrollmentRef ?? 'DSH_MOBILE_ENROLLMENT_TOKEN')))?.value }
+        catch { throw new Error('enrollment_credential_unavailable') }
+      }
+      if (!bootstrap) throw new Error('enrollment_credential_missing')
+      const checked = tokenSchema.safeParse(bootstrap)
+      if (!checked.success) throw new Error('enrollment_credential_invalid')
+      bootstrap = checked.data
+    }
+    return z.object({ id: z.uuid(), token: tokenSchema }).parse(await this.api('/v1/hosts', bootstrap, 'POST', { name }, origin, deadline))
+  }
   async status() {
     const saved = this.saved
     if (!saved) return { configured: false, connection: this.relay.state, devices: [] }
-    const base = { configured: true, connection: this.relay.state, origin: saved.origin, name: saved.name, hostId: saved.hostId, enabled: saved.enabled }
+    const base = { configured: true, connection: this.relay.state, origin: saved.origin, name: saved.name, hostId: saved.hostId, enabled: saved.enabled,
+      configRevision: this.configRevision }
     try {
       const result = devicesSchema.parse(await this.api('/v1/host/devices', saved.token))
       return { ...base, devices: result.devices.map(device => ({ id: device.id, name: device.name, fingerprint: device.key_thumbprint,
@@ -92,26 +118,35 @@ export class Management {
     if (input.action === 'setup') {
       if (this.saved) throw new Error('already_configured')
       const origin = this.origin(input.origin)
-      // 提交时重新读取后端模式，客户端不能自行选择免密；开放模式不读取或发送注册密钥。
-      const { registrationMode } = await this.serverInfo(origin)
-      let bootstrap: string | undefined
-      if (registrationMode === 'private') {
-        bootstrap = input.enrollmentToken?.trim()
-        if (!bootstrap) {
-          try { bootstrap = (await this.credentials.resolve(credentialRef(this.config.enrollmentRef ?? 'DSH_MOBILE_ENROLLMENT_TOKEN')))?.value }
-          catch { throw new Error('enrollment_credential_unavailable') }
-        }
-        if (!bootstrap) throw new Error('enrollment_credential_missing')
-        const checked = tokenSchema.safeParse(bootstrap)
-        if (!checked.success) throw new Error('enrollment_credential_invalid')
-        bootstrap = checked.data
-      }
-      const result = z.object({ id: z.uuid(), token: tokenSchema }).parse(await this.api('/v1/hosts', bootstrap, 'POST', { name: input.name }, origin))
+      const result = await this.enroll(origin, input.name, input.enrollmentToken, true)
       await this.save({ origin, name: input.name, hostId: result.id, token: result.token, enabled: false })
       return { configured: true }
     }
     const saved = this.saved
     if (!saved) throw new Error('not_configured')
+    if (input.action === 'change-origin' || input.action === 'replace-server') {
+      if (!input.confirmed) throw new Error('connection_change_confirmation_required')
+      if (input.expectedRevision !== this.configRevision) throw new Error('connection_config_changed')
+      const origin = this.origin(input.origin)
+      const deadline = AbortSignal.timeout(15000)
+      let next = { ...saved, origin }
+      if (input.action === 'change-origin') {
+        await this.serverInfo(origin, deadline)
+        // 用户明确确认新地址受信任且属于同一服务后，才用现有凭据验证；不自动退回重新注册。
+        devicesSchema.parse(await this.api('/v1/host/devices', saved.token, 'GET', undefined, origin, deadline))
+      } else {
+        // 新后端只能使用本次输入的注册密钥，不能带上旧电脑凭据或旧环境注册密钥。
+        const result = await this.enroll(origin, input.name, input.enrollmentToken, false, deadline)
+        devicesSchema.parse(await this.api('/v1/host/devices', result.token, 'GET', undefined, origin, deadline))
+        next = { ...next, name: input.name, hostId: result.id, token: result.token }
+      }
+      // 检测和持久化都成功后才替换通道；失败时原连接和配置保持。
+      if (deadline.aborted) throw new Error('gateway_timeout')
+      await this.save(next)
+      this.relay.stop()
+      if (next.enabled && !this.disposed) this.relay.start(next.origin, next.token, next.hostId)
+      return { updated: true }
+    }
     if (input.action === 'enable' || input.action === 'disable') {
       const enabled = input.action === 'enable'
       // 关闭立即生效，即使随后持久化失败，也不能保持外网连接。

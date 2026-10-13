@@ -30,8 +30,10 @@ async function fixture() {
     openai: {},
   } }, validate: value => assertServiceable(value) })
   let attached = true
-  const adapter = new ProviderEndpoint(() => attached ? ctx.get('settings') : undefined); cleanup.push(() => adapter.dispose())
-  return { provider, adapter, detach: () => { attached = false } }
+  const directory = { rows: [{ provider: 'openai', displayName: 'OpenAI', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'], declared: false }], available: true }
+  const adapter = new ProviderEndpoint(() => attached ? ctx.get('settings') : undefined,
+    () => directory.available ? { listConfigurableProviders: () => directory.rows } : undefined); cleanup.push(() => adapter.dispose())
+  return { provider, adapter, directory, detach: () => { attached = false } }
 }
 const operation = (view: ReturnType<ProviderEndpoint['read']>, change: { op: 'unset' } | { op: 'set'; value: string } = { op: 'unset' }) => ({
   method: 'remote.endpointWrite' as const, target: view.target, snapshot: view.snapshot, expectedRevision: view.revision, confirmed: true as const, change,
@@ -83,4 +85,55 @@ test('只读、过期、取消、服务移除、无效地址及原服务写入�
   await expect(f.adapter.write('one', operation(view), signal())).rejects.toThrow('remote_endpoint_write_unconfirmed')
   view = f.adapter.read('one', 'alpha'); f.detach()
   await expect(f.adapter.write('one', operation(view), signal())).rejects.toThrow('remote_endpoint_stale')
+})
+
+test('恢复策略按请求协商；已有继承地址和官方目录默认均可恢复，旧客户端视图不增加字段', async () => {
+  const { adapter } = await fixture()
+  expect(adapter.read('one', 'alpha')).not.toHaveProperty('resettable')
+  expect(adapter.read('one', 'alpha', true).resettable).toBe(true)
+  const view = adapter.read('one', 'openai', true)
+  expect(view.resettable).toBe(true)
+  const next = await adapter.write('one', { ...operation(view, { op: 'set', value: 'https://gateway.invalid/v1' }), resetPolicy: true }, signal())
+  expect(next.resettable).toBe(true)
+  const restored = await adapter.write('one', { ...operation(next), resetPolicy: true }, signal())
+  expect(restored).toMatchObject({ origin: null, overridden: false, resettable: true })
+})
+
+test('自定义提供方无默认地址时明确拒绝旧客户端与绕过页面的恢复，显式地址写入仍可用', async () => {
+  const { adapter, provider } = await fixture()
+  await provider.mutate('llm-pi-ai', [{ op: 'set', path: ['providers', 'manual'], value: {
+    api: 'openai-completions', baseURL: 'https://manual.invalid/v1', models: [{ id: 'manual-model' }],
+  } }])
+  const view = adapter.read('one', 'manual', true), writes = provider.writes
+  expect(view).toMatchObject({ resettable: false, overridden: true, inheritedOrigin: null })
+  await expect(adapter.write('one', { ...operation(view), resetPolicy: true }, signal())).rejects.toThrow('remote_endpoint_reset_unavailable')
+  const legacy = adapter.read('one', 'manual')
+  expect(legacy).not.toHaveProperty('resettable')
+  await expect(adapter.write('one', operation(legacy), signal())).rejects.toThrow('remote_endpoint_reset_unavailable')
+  expect(provider.writes).toBe(writes)
+  expect(provider.get('llm-pi-ai')).toMatchObject({ providers: { manual: { baseURL: 'https://manual.invalid/v1' } } })
+  const fresh = adapter.read('one', 'manual', true)
+  const saved = await adapter.write('one', { ...operation(fresh, { op: 'set', value: 'http://127.0.0.1:42123/v1' }), resetPolicy: true }, signal())
+  expect(saved).toMatchObject({ origin: 'http://127.0.0.1:42123', resettable: false })
+  expect(provider.writes).toBe(writes + 1)
+})
+
+test('目录缺失、身份不匹配或重复时不猜默认地址；读取后目录移除也不能恢复', async () => {
+  const { adapter, provider, directory } = await fixture()
+  const view = adapter.read('one', 'openai', true)
+  directory.available = false
+  await expect(adapter.write('one', operation(view), signal())).rejects.toThrow('remote_endpoint_reset_unavailable')
+  expect(provider.writes).toBe(0)
+  expect(adapter.read('one', 'openai', true).resettable).toBe(false)
+  directory.available = true
+  directory.rows[0]!.declared = true
+  expect(adapter.read('one', 'openai', true).resettable).toBe(false)
+  directory.rows[0]!.declared = false
+  directory.rows[0]!.settingsNs = 'other-namespace'
+  expect(adapter.read('one', 'openai', true).resettable).toBe(false)
+  directory.rows[0]!.settingsNs = 'llm-pi-ai'
+  directory.rows.push({ ...directory.rows[0]! })
+  expect(adapter.read('one', 'openai', true).resettable).toBe(false)
+  directory.available = false
+  expect(adapter.read('one', 'alpha', true).resettable).toBe(true)
 })

@@ -1,17 +1,22 @@
+import { isProfileDshVersion } from './profile-dsh-version.js'
 import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
 import { MAX_OFFICE_PDF_BYTES, RESOURCE_CHUNK_BYTES, officeMetadataSchema, type HostFrame } from '@dsh-mobile/protocol'
 import type { ResourceWindow } from './resource-window.js'
+import { officeFileResponse, workspaceFilePayload, workspaceFileResponse } from './workspace-file-contract.js'
 
 /** 固定调用原转换服务，保留 Session lookup 和 Host 文件权限；完整 PDF 不进入网关 JSON 帧。 */
 export async function streamOffice(connection: Pick<HostConnectionHandle, 'createSharedFetchHandler'>,
   id: string, sessionId: string, path: string, signal: AbortSignal, window: ResourceWindow, emit: (frame: HostFrame) => void,
-  priority: 'foreground' | 'background' = 'foreground') {
+  priority: 'foreground' | 'background' = 'foreground', version = '0.1.6-alpha.2') {
   const fetch = connection.createSharedFetchHandler('/api').fetch
   const rpc = async (endpoint: string, args: Record<string, unknown>) => {
     const response = await fetch(new Request(`http://dsh.internal/api/${endpoint}`, { method: 'POST', signal,
-      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'client-request', rpcId: id, method: endpoint, payload: { args } }) }))
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'client-request', rpcId: id, method: endpoint,
+        payload: workspaceFilePayload(version, endpoint, { args }) }) }))
     if (!response.ok) { await response.body?.cancel(); throw new Error(`remote_http_${response.status}`) }
-    const envelope = await response.json()
+    const envelope = await (!isProfileDshVersion(version) ? response.json()
+      : endpoint === 'officeToPdf/render' ? officeFileResponse(response, id, signal)
+      : endpoint === 'workspaceFiles/readBytes' ? workspaceFileResponse(response, id, signal) : response.json())
     signal.throwIfAborted()
     if (envelope?.type !== 'server-response' || envelope.rpcId !== id || typeof envelope.result?.ok !== 'boolean') throw new Error('invalid_remote_response')
     return envelope.result

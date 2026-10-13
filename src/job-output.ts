@@ -1,7 +1,7 @@
 import { constants } from 'node:fs'
 import { lstat, open } from 'node:fs/promises'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { JobId, JobSnapshot } from '@deepseek-ai/dsh-jobs'
+import type { JobId, JobStatus } from '@deepseek-ai/dsh-jobs'
 
 /** 对应已核验的 background-output v1 补丁；旧版 registry 不实现此方法。 */
 export type IndependentOutput = { state: 'pending' | 'unsupported' } | {
@@ -9,9 +9,9 @@ export type IndependentOutput = { state: 'pending' | 'unsupported' } | {
 }
 export type OutputRequest = { stream: 'stdout' | 'stderr'; fromByte: number; maxBytes: number }
 export type IndependentRegistry = {
-  readOutputBytes?: (id: JobId, request: OutputRequest, caller: Agent) => { output: IndependentOutput; snapshot: JobSnapshot }
+  readOutputBytes?: (id: JobId, request: OutputRequest, caller: Agent) => { output: IndependentOutput; snapshot: OutputSnapshot }
 }
-type OutputSnapshot = { status: JobSnapshot['status'] }
+type OutputSnapshot = { status: JobStatus }
 
 /** 只补读原收集器提供的完整 spill；路径不会来自手机或返回手机。每次最多 64 KiB。 */
 export async function recoverOutput(request: OutputRequest, read: () => { output: IndependentOutput; snapshot: OutputSnapshot }, signal: AbortSignal) {

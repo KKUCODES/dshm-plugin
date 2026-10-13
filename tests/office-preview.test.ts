@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Context } from '@deepseek-ai/cordis'
 import * as connection from '@deepseek-ai/dsh-client-connection'
 import { afterEach, expect, test } from 'vitest'
-import { type HostFrame, RESOURCE_CHUNK_BYTES } from '@dsh-mobile/protocol'
+import { type HostFrame, MAX_OFFICE_PDF_BYTES, RESOURCE_CHUNK_BYTES } from '@dsh-mobile/protocol'
 import { ResourceWindow } from '../src/resource-window.js'
 import { streamOffice } from '../src/office-preview.js'
 
@@ -71,4 +71,53 @@ test('后台预览优先级传入原转换队列，仍执行结束前权限核�
   expect(f.calls[0]).toMatchObject({ args: { priority: 'background' } })
   expect(f.calls.at(-1)?.endpoint).toBe('officeToPdf/generation')
   expect(frames.at(-1)?.type).toBe('end')
+})
+
+test('新版Office结束前仍核验同一源文件，通过原options读取一个字节', async () => {
+  const f = await fixture(), window = new ResourceWindow(), frames: HostFrame[] = []
+  await streamOffice(f.connection, randomUUID(), 's', 'a.docx', new AbortController().signal, window, frame => {
+    frames.push(frame)
+    if (frame.type === 'event' && (frame.value as { type: string }).type === 'chunk') window.acknowledge(1)
+  }, 'foreground', '0.2.1-alpha.1')
+  expect(f.calls[1]).toEqual({ endpoint: 'workspaceFiles/readBytes', args: {
+    workspaceFileScopeId: 's', path: 'a.docx', options: { range: { offset: 0, length: 1 } },
+  } })
+  expect(frames.at(-1)?.type).toBe('end')
+})
+
+test('新版原二进制Office载体可分片超过文件窗的PDF，仍核验源文件和引擎且拒绝超限', async () => {
+  const pdf = Buffer.alloc(RESOURCE_CHUNK_BYTES * 7 + 13, 32); pdf.write('%PDF-1.7\n')
+  const controller = new AbortController(), id = randomUUID(), window = new ResourceWindow(), frames: HostFrame[] = []
+  const calls: Array<{ method: string; payload: { args: unknown } }> = []
+  let oversized = false
+  const connection = { createSharedFetchHandler: () => ({ fetch: async (request: Request) => {
+    const body = await request.json(); calls.push(body)
+    if (body.method === 'officeToPdf/generation') return Response.json({ type: 'server-response', rpcId: id, result: { ok: true, value: 'engine-1' } })
+    const source = body.method === 'workspaceFiles/readBytes'
+    const bytes = source ? Buffer.from('x') : oversized ? Buffer.alloc(MAX_OFFICE_PDF_BYTES + 1) : pdf
+    const form = new FormData()
+    form.set('metadata', JSON.stringify({ type: 'server-response', rpcId: id, result: { ok: true, value: {
+      absolutePath: '/work/a.docx', version: 'v1', offset: 0, eof: true, bytes: bytes.length, data: null,
+      ...(source ? {} : { generation: 'engine-1', missingFonts: ['Missing font'] }),
+    } }, attachments: [{ path: ['data'], codec: 'bytes', part: 'bytes-0' }] }))
+    form.set('bytes-0', new Blob([new Uint8Array(bytes)]))
+    return new Response(form)
+  } }) } as unknown as Parameters<typeof streamOffice>[0]
+  const emit = (frame: HostFrame) => {
+    frames.push(frame)
+    if (frame.type === 'event' && (frame.value as { type: string }).type === 'chunk') window.acknowledge(1)
+  }
+  await streamOffice(connection, id, 's', 'a.docx', controller.signal, window, emit, 'background', '0.2.1-alpha.1')
+  expect(frames[0]).toMatchObject({ type: 'event', value: { type: 'metadata', bytes: pdf.length, missingFonts: ['Missing font'] } })
+  const chunks = frames.filter((frame): frame is Extract<HostFrame, { type: 'event' }> =>
+    frame.type === 'event' && (frame.value as { type: string }).type === 'chunk')
+  expect(Buffer.concat(chunks.map(frame => Buffer.from((frame.value as { data: string }).data, 'base64')))).toEqual(pdf)
+  expect(calls.map(call => call.method)).toEqual(['officeToPdf/render', 'workspaceFiles/readBytes', 'officeToPdf/generation'])
+  expect(calls[0]?.payload.args).toMatchObject({ priority: 'background' })
+  expect(calls[1]?.payload.args).toEqual({ workspaceFileScopeId: 's', path: 'a.docx', options: { range: { offset: 0, length: 1 } } })
+  expect(frames.at(-1)).toEqual({ type: 'end', id })
+  oversized = true; frames.length = 0
+  await expect(streamOffice(connection, id, 's', 'a.docx', controller.signal, window, emit, 'foreground', '0.2.1-alpha.1'))
+    .rejects.toThrow('invalid_remote_response')
+  expect(frames).toEqual([])
 })

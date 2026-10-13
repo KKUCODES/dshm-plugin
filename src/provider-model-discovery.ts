@@ -1,5 +1,5 @@
 import { symbols } from '@deepseek-ai/cordis'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
 import type { LlmRuntime, LlmModelDiscoveryRequest } from '@deepseek-ai/dsh-llm'
 import { providerRouteSchema, providerModelsDiscoveryViewSchema } from '@dsh-mobile/protocol'
 

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { symbols } from '@deepseek-ai/cordis'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
 import { computerSettingValues, pluginSettingValues, computerSettingsWriteSchema, type ComputerSettingsWrite } from '@dsh-mobile/protocol'
 
 type Namespace = 'llm-deepseek' | keyof typeof pluginSettingValues
@@ -49,6 +49,7 @@ export class ComputerSettings {
       // 原 revision 在 namespace 重挂后会归零；额外保留 resolved 对象身份，拒绝旧表单写到新实例。
       this.snapshots.set(snapshot, { owner, namespace, providerIdentity: providerIdentity(provider), value: provider.get(namespace), revision: view.revision, expires: Date.now() + 300000 })
       return { snapshot, namespace, revision: view.revision, writable: provider.writable === true,
+        ...(view.documentId === undefined ? {} : { documentId: view.documentId }),
         applies: view.applies === 'restart' ? 'restart' : 'live', fields }
     } catch (error) { throw this.safeReadError(error) }
   }

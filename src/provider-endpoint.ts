@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { symbols } from '@deepseek-ai/cordis'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
+import type { ProviderDirectory } from './provider-creation.js'
 import { computerEndpointViewSchema, computerEndpointWriteSchema, providerRouteSchema, type ComputerEndpointWrite } from '@dsh-mobile/protocol'
 
 type Provider = Pick<SettingsProvider, 'describe' | 'get' | 'mutate' | 'writable'>
@@ -14,13 +15,24 @@ const endpoint = (value: unknown) => {
   if (!['http:', 'https:'].includes(url.protocol)) throw Error('invalid')
   return url
 }
-type Snapshot = { owner: string; route: string; provider: unknown; config: unknown; revision: number; expires: number }
+type Snapshot = { owner: string; route: string; provider: unknown; config: unknown; revision: number; resettable: boolean; expires: number }
 
 /** 未配置baseURL时由原提供方模型目录解析；不假定所有模型共用默认站点。 */
 export class ProviderEndpoint {
   private snapshots = new Map<string, Snapshot>()
-  constructor(private settings: () => Provider | undefined) {}
-  read(owner: string, rawRoute: string) {
+  constructor(private settings: () => Provider | undefined, private directory?: () => Pick<ProviderDirectory, 'listConfigurableProviders'> | undefined) {}
+  private resettable(provider: Provider, route: string) {
+    const view = provider.describe({ redactSecrets: true }).find(item => item.ns === namespace)
+    if (endpoint(record(record(record(view?.base).providers)[route]).baseURL)) return true
+    // 目录中的 declared=false 才表示原适配器提供默认地址；不按提供方名称猜测。
+    try {
+      const matches = this.directory?.()?.listConfigurableProviders().filter(entry => entry.provider === route
+        && entry.settingsNs === namespace && entry.settingsPath.length === 2
+        && entry.settingsPath[0] === 'providers' && entry.settingsPath[1] === route)
+      return matches?.length === 1 && matches[0]!.declared === false
+    } catch { return false }
+  }
+  read(owner: string, rawRoute: string, resetPolicy = false) {
     try {
       const route = providerRouteSchema.parse(rawRoute), provider = this.settings()
       if (!provider) throw Error('unavailable')
@@ -30,14 +42,16 @@ export class ProviderEndpoint {
       const current = endpoint(record(profiles[route]).baseURL)
       const inherited = endpoint(record(record(record(view.base).providers)[route]).baseURL)
       const user = record(record(record(view.user).providers)[route])
+      const resettable = this.resettable(provider, route)
       const snapshot = randomUUID()
       const result = computerEndpointViewSchema.parse({ snapshot, target: { provider: route }, revision: view.revision,
         writable: provider.writable === true, applies: view.applies === 'restart' ? 'restart' : 'live', protocol: 'provider',
         origin: current?.origin ?? null, inheritedOrigin: inherited?.origin ?? null,
-        customPath: !!current && current.pathname !== '/', overridden: Object.hasOwn(user, 'baseURL') })
+        customPath: !!current && current.pathname !== '/', overridden: Object.hasOwn(user, 'baseURL'),
+        ...(resetPolicy ? { resettable } : {}) })
       for (const [id, entry] of this.snapshots) if ((entry.owner === owner && entry.route === route) || entry.expires <= Date.now()) this.snapshots.delete(id)
       if (this.snapshots.size >= 128) throw Error('capacity')
-      this.snapshots.set(snapshot, { owner, route, provider: identity(provider), config, revision: view.revision, expires: Date.now() + 300000 })
+      this.snapshots.set(snapshot, { owner, route, provider: identity(provider), config, revision: view.revision, resettable, expires: Date.now() + 300000 })
       return result
     } catch { throw Error('remote_endpoint_unavailable') }
   }
@@ -53,6 +67,8 @@ export class ProviderEndpoint {
       || snapshot.revision !== operation.expectedRevision) throw Error('remote_endpoint_stale')
     if (!provider.writable) throw Error('remote_endpoint_read_only')
     signal.throwIfAborted()
+    if (operation.change.op === 'unset' && (!snapshot.resettable || !this.resettable(provider, route)))
+      throw Error('remote_endpoint_reset_unavailable')
     try {
       await provider.mutate(namespace, [operation.change.op === 'set'
         ? { op: 'set', path: ['providers', route, 'baseURL'], value: operation.change.value }
@@ -60,7 +76,7 @@ export class ProviderEndpoint {
       signal.throwIfAborted()
       const current = this.settings()
       if (!current || identity(current) !== snapshot.provider) throw Error('changed')
-      return this.read(owner, route)
+      return this.read(owner, route, operation.resetPolicy === true)
     } catch (error) {
       if (record(error).code === 'SETTINGS_CONFLICT') throw Error('remote_endpoint_stale')
       throw Error('remote_endpoint_write_unconfirmed')

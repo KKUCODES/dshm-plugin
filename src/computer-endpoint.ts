@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { symbols } from '@deepseek-ai/cordis'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
 import type { LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
-import { resolveAdapterOptions, type Config } from '@deepseek-ai/dsh-llm-deepseek'
+import { resolveAdapterOptions } from '@deepseek-ai/dsh-llm-deepseek'
 import { DEEPSEEK_DEFAULT_BASE_URL } from '@deepseek-ai/dsh-web-search-deepseek'
 import { computerEndpointWriteSchema, type ComputerEndpointWrite } from '@dsh-mobile/protocol'
 
@@ -20,7 +20,9 @@ export class ComputerEndpoint {
     // 原搜索插件 resolveOptions 的固定优先级；搜索从不继承 DEEPSEEK_BASE_URL。
     if (this.target) return { protocol: 'messages' as const,
       baseURL: (raw.baseURL ?? environment.get('DEEPSEEK_SEARCH_BASE_URL')?.value ?? DEEPSEEK_DEFAULT_BASE_URL) as string }
-    return resolveAdapterOptions(raw as Config, environment)
+    const options = resolveAdapterOptions(raw as Parameters<typeof resolveAdapterOptions>[0], environment)
+    // 新版解析器固定使用 Messages 协议；旧版返回显式 protocol。
+    return { ...options, protocol: 'protocol' in options ? options.protocol : 'messages' as const }
   }
   read(owner: string) {
     try {

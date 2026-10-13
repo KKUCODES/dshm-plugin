@@ -3,6 +3,8 @@ import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { digest, existingInside, replaceFile } from '../background-output/install-runtime.mjs';
 import { sourceRoot, normalize } from '../background-output/prepare.mjs';
+import { latestInputs, originalCommand, patchedCommand } from './contract.mjs';
+export { latestInputs, originalCommand, patchedCommand } from './contract.mjs';
 
 export const inputs = [
   ['tsconfig.json', '9eb420010dfd10daaa1a5374ce018fd691b1ba56a4bea60f2ebd8d548ffdffa4'],
@@ -12,8 +14,6 @@ export const inputs = [
   ['packages/boot/app-boot/src/profile-resolution/resolver.ts', 'dd25f919f037bef9bdad9adaf49b7816e72f4b85b7bbe975c4e0c8ab7746b2d4'],
   ['packages/boot/app-boot/src/profile-resolution/service.ts', '567a675b99e05cabb4933bcfb613b7980db9bbf38c8d210e1d2b563b471312c4'],
 ];
-export const originalCommand = 'node --import tsx/esm apps/cli/src/bin.ts';
-export const patchedCommand = 'node --import tsx/esm --import ./.dshm-source/bootstrap.mjs apps/cli/src/bin.ts';
 export const outputRoot = fileURLToPath(new URL('../../artifacts/compatibility/source-start/', import.meta.url));
 
 async function optionalFile(root, local) {
@@ -39,14 +39,16 @@ export async function installStartup(action, targetDirectory) {
   if (!['plan', 'apply', 'restore'].includes(action)) throw Error('Expected plan, apply or restore');
   const root = await realpath(resolve(targetDirectory));
   if (root.toLowerCase() === (await realpath(sourceRoot)).toLowerCase()) throw Error('Reference checkout is read-only');
-  for (const [path, sha256] of inputs) {
-    const text = normalize(await readFile(await existingInside(root, path), 'utf8'));
-    if (digest(text) !== sha256) throw Error(`Source startup baseline mismatch: ${path}`);
-  }
   const packagePath = await existingInside(root, 'package.json');
   const current = await readFile(packagePath), text = current.toString('utf8'), manifest = JSON.parse(text);
   if (!Buffer.from(text).equals(current)) throw Error('Unsupported package.json encoding');
-  if (manifest.name !== '@deepseek-ai/dsh-root' || manifest.version !== '0.1.6-alpha.2') throw Error('Root package version mismatch');
+  if (manifest.name !== '@deepseek-ai/dsh-root' || !['0.1.6-alpha.2', '0.2.1-alpha.1'].includes(manifest.version))
+    throw Error('Root package version mismatch');
+  const sourceInputs = manifest.version === '0.2.1-alpha.1' ? latestInputs : inputs;
+  for (const [path, sha256] of sourceInputs) {
+    const text = normalize(await readFile(await existingInside(root, path), 'utf8'));
+    if (digest(text) !== sha256) throw Error(`Source startup baseline mismatch: ${path}`);
+  }
   const command = manifest.scripts?.dsh;
   if (![originalCommand, patchedCommand].includes(command)) throw Error('Unknown dsh script; no changes made');
   if (text.split(JSON.stringify(command)).length !== 2) throw Error('Ambiguous dsh script text');
@@ -62,7 +64,8 @@ export async function installStartup(action, targetDirectory) {
   const present = entries.filter(entry => entry.current !== undefined).length;
   // An interrupted apply can safely be repaired, but a patched script without its payload cannot be called healthy.
   const state = scriptPatched && present === 2 ? 'patched' : !scriptPatched && present === 0 ? 'original' : 'partial';
-  const summary = { action, targetRoot: root, patchVersion: 'source-start-v1', state, payloads: present };
+  const summary = { action, targetRoot: root, baseline: manifest.version,
+    patchVersion: manifest.version === '0.2.1-alpha.1' ? 'source-start-v2' : 'source-start-v1', state, payloads: present };
   if (action === 'plan') return summary;
   const desiredCommand = action === 'apply' ? patchedCommand : originalCommand;
   const nextText = text.replace(JSON.stringify(command), JSON.stringify(desiredCommand));

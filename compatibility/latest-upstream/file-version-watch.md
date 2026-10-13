@@ -1,0 +1,27 @@
+# Windows 文件版本变化通知
+
+- 状态：回归测试修正前失败、修正后通过；修正后的发布和实际源码Host/网关/Android专项均完整通过。源码事务退出0，原38文件/启动和355资源精确恢复；完整新版支持未发布。
+- 维护角色：DSHM电脑兼容维护者。
+- 最近核验：2026-10-09；固定DSH `0.2.1-alpha.1` / `5badb15009ae1756c3afe0ae0cef1faafc290ccc`。
+
+原FsVersion包含ctime，而原Chokidar在读取推进atime后，可能只按mtime过滤文件变化。真实改写同大小文件并立即恢复mtime，原文件版本确实改变，准备完毕的订阅却不通知。三次同步改写都复现；异步写入可能让短暂的新mtime被观察到，因此首轮npm成功不能排除这个问题。
+
+源码首轮[完整事务](../../artifacts/latest-runtime-check/latest-source-office-metadata-run-4fc03631-37a6-43f0-8f20-6bd6bfc05efc.json)在恢复A的版本通知等待处失败，退出1；finally完成原37文件/启动配置/355客户端资源精确恢复，恢复构建330.507秒通过。[原Host失败与清理](../../artifacts/latest-runtime-check/latest-source-office-metadata-0e54a02d-cbd9-4815-8726-646dc803e064-test.json)和[Android失败](../../../dsh-mobile/artifacts/latest-mobile-runtime/office-metadata-4a8421fe-7a8f-4ebf-bcd6-2a3e02070854/latest-remote-android.json)保留。拥有Host43912已退出，原App23468/Host29132、APK、绑定、1837事件摘要和management=false在[独立恢复核对](../../artifacts/latest-runtime-check/latest-office-metadata-86e23518-4dcf-45a7-ae2b-75332fe2e8e9-original-1ba62e41-bd6b-4135-b04e-845ea4d8002b.json)中保持；该记录只用于原环境核对，不把失败源码整轮改成通过。
+
+修正只作用于固定新版Windows的单文件订阅：监听原父目录的操作系统通知并过滤当前文件，从而支持原子替换、删除后重建及同大小/mtime变化。目录和其他平台保持原Chokidar行为。关闭订阅返回可重复等待的完成Promise，关闭后不继续回调，监听错误沿原接口传播；权限和版本检查仍由原调用链执行。相比轮询，该方案不增加周期性文件检查；不将本地验证扩展为其他平台或目录同元数据场景已验收。
+
+实现：[共享原源码/发布变换](./file-watch-changes.mjs)、[固定发布载荷安装](./file-version-watch.mjs)、[源码清单](./source-changes.mjs)、[真实Host入口](../../../backend/tests/latest-host.test.ts)。原源码哈希`77cdf3a1a259c9e24fef28f42f937a6b5ce1ad6d692fbc8dab148925cc4f1f28`、发布原字节哈希`63fbb41d2c33e07111884b798be507e68c2752acab8249c821c20ade436e894f`均固定核验；只安装到项目隔离候选，拒绝未知版本/字节/越界链接。新源码载荷为14组38文件，旧37文件证据保留为历史，不能替代新组合SDK/Electron/独立交付验收。
+
+[回归测试](../../tests/latest-file-watch.test.mjs)直接调用真实固定发布FsLocal和操作系统文件，不模拟watch/stat。命令：`node --test tests/latest-file-watch.test.mjs`。原版在同大小/mtime变更的通知断言失败；补丁后连续三次通知、相邻文件过滤、删除/重建、原子替换、重复关闭、关闭后不通知及初始已取消信号均通过。诊断脚本移至[明确诊断目录](../../scripts/diagnostics/diagnose-latest-office-watch.mjs)；[同步复现](../../artifacts/latest-runtime-check/office-watch-diagnostic-yzhedS/report.json)和[异步对照](../../artifacts/latest-runtime-check/office-watch-diagnostic-FpUgD3/report.json)保留。
+
+修正后的[发布整轮报告](../../artifacts/latest-runtime-check/latest-office-metadata-96f0383c-9059-4d03-92f0-297e35321bba-test.json)、[清理报告](../../artifacts/latest-runtime-check/latest-office-metadata-96f0383c-9059-4d03-92f0-297e35321bba-cleanup.json)与[实际Android报告](../../../dsh-mobile/artifacts/latest-mobile-runtime/office-metadata-c8e3b3ea-1a15-46f7-bf87-8efd8a45172f/latest-remote-android.json)均通过：等长1281字节A→B→A，mtime纳秒相同、ctime与原版本改变；保持预览打开会更新实际PDF画布/正文，三个原版本各转换一次。同版本重开累计三次转换、六次权限和六次代际核验，旧正文不残留。六格式/附件、服务重建、撤销和重连拒绝、Host重启一并核验。
+
+拥有Host31092/39804均退出；[原App恢复](../../artifacts/latest-runtime-check/latest-office-metadata-96f0383c-9059-4d03-92f0-297e35321bba-original-82998c63-a4eb-4ae5-bd41-60caf6d3a076.json)保持原App23468/Host29132、同APK/绑定、空草稿及management=false。原[开始前全历史](../../artifacts/latest-runtime-check/latest-live-child-retention-office-watch-patched-20261009-before.json)与[发布恢复后全历史](../../artifacts/latest-runtime-check/latest-live-child-retention-office-watch-npm-restored-20261009-before.json)identity逐项相同，并与修正前首轮基线相同：26会话3799事件。
+
+实际源码[新事务](../../artifacts/latest-runtime-check/latest-source-office-metadata-run-6899d827-b33e-47de-bd0f-1c9d57955e0d.json)使用14组38文件载荷，已退出0且passed=true：335.080秒完整构建、47项实际源码回归（含真实FsLocal监听）、原编码/取消/插件重启/包操作/身份及桌面接口检查通过；relay阶段131.445秒通过。[实际Host报告](../../artifacts/latest-runtime-check/latest-source-office-metadata-33ccf7e8-8f1a-4021-a833-26aeca1777e6-test.json)、[清理](../../artifacts/latest-runtime-check/latest-source-office-metadata-33ccf7e8-8f1a-4021-a833-26aeca1777e6-cleanup.json)和[Android报告](../../../dsh-mobile/artifacts/latest-mobile-runtime/office-metadata-f14af343-8866-41cd-ad3e-c1da4bc55301/latest-remote-android.json)证明与发布相同的正文/画布、权限/代际、缓存、服务变化、撤销和重启范围通过。
+
+finally完成原38文件/启动配置精确恢复和333.168秒原完整构建，355资源摘要为`517da690aabff313743f2be09dd93e06b218bacf579bebb87ca330d50702f107`，Git干净。[只读清单审计](../../artifacts/latest-runtime-check/patch-inventory-oV1F3b/report.json)再次核对18旧目标/14组38文件/全部变换及原状态，fullAcceptancePassed=false。拥有Host24972/440均退出；[原App恢复](../../artifacts/latest-runtime-check/latest-source-office-metadata-33ccf7e8-8f1a-4021-a833-26aeca1777e6-original-f5f9aae4-d85f-4a99-b13c-2ff91849789d.json)保持原App23468/Host29132、APK/绑定/空草稿、1837主历史摘要和management=false。[源码后的全部历史](../../artifacts/latest-runtime-check/latest-live-child-retention-office-watch-source-restored-20261009-before.json)与发布前identity逐项相同，26会话3799事件保持。
+
+新[独立源码候选](../../artifacts/latest-source-delivery/candidate-cW4Zao/build-report.json)包含14组38文件、78原始/修改/启动载荷及独立安装器，9项安装边界通过。[独立候选实际运行事务](../../artifacts/latest-runtime-check/latest-source-delivery-run-5dec3071-b95e-49cf-b089-dd9557876880.json)已退出0：安装/恢复各41处写入，331.083秒修改后完整构建、47项原源码回归、75.437秒实际Remote及330.057秒原完整恢复构建通过，38原源码/启动和355资源精确恢复。[新ZIP解包核对](../../artifacts/latest-source-delivery/pack-D0WeoL/report.json)84文件通过，详见[交付范围](./source-delivery.md)。原App23468/Host29132、绑定和1837主历史摘要再次核对保持，[全部26会话3799事件](../../artifacts/latest-runtime-check/latest-live-child-retention-standalone-watch-restored-20261009-before.json)与前轮identity逐项相同。
+
+旧版插件完整Vitest的41文件/218项、`tsc -p tsconfig.check.json --noEmit`、两项补丁链测试及新版候选严格消费类型检查于2026-10-09再次退出0；本次命令输出为核验依据，没有另造日志文件。新SDK使用独立attempt-11/38文件清单并固定核对监听补丁摘要，完整修改后构建347.230秒通过。旧SDK10已归档，EXE摘要及原Python资源检查保持，但旧Node资源共用源码硬链接的19项变化独立保留；断开链接后的全量压缩核对通过，详见[载体冻结边界](./sdk-native.md#第十一轮与载体资源冻结2026-10-09)。新SDK/Electron实际复验尚未通过，旧37文件结果保持历史范围。

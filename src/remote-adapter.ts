@@ -1,3 +1,4 @@
+import { isProfileDshVersion } from './profile-dsh-version.js'
 import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
 import type { TypertGateway } from '@deepseek-ai/dsh-api-gateway/types'
 import type { ClientModuleRegistry } from '@deepseek-ai/dsh-client-modules'
@@ -15,6 +16,8 @@ import type { CommandOutput } from './command-output.js'
 import { ComputerSettings } from './computer-settings.js'
 import { readModelReadiness } from './model-readiness.js'
 import { presetDirectory, type PresetDirectoryService } from './preset-directory.js'
+import { profilePresetDirectory, type ProfilePresetServices } from './profile-preset-directory.js'
+import type { ProfilePresetManagement } from './profile-preset-management.js'
 import { ProviderSettings } from './provider-settings.js'
 import { readProviderCard } from './provider-card.js'
 import { ProviderRemoval } from './provider-removal.js'
@@ -22,7 +25,7 @@ import { ProviderCreation, type ProviderDirectory } from './provider-creation.js
 import { ProviderModels } from './provider-models.js'
 import { discoverProviderModels, type ModelDiscovery } from './provider-model-discovery.js'
 import { ModelProbe } from './model-probe.js'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
 import { ComputerKey, type ComputerKeyServices } from './computer-key.js'
 import { ComputerEndpoint } from './computer-endpoint.js'
 import { ProviderEndpoint } from './provider-endpoint.js'
@@ -35,24 +38,31 @@ import type { FeedbackNotifications } from './feedback-notifications.js'
 import type { TaskNotifications } from './task-notifications.js'
 import { PluginOperations } from './plugin-operations.js'
 import { CordisConnections, type CordisInspectService } from './cordis-connections.js'
+import { openGatewayStream } from './gateway-stream.js'
+import { workspaceFilePayload, workspaceFileResponse } from './workspace-file-contract.js'
+import type { SubagentServiceState } from './subagent-service-state.js'
 
 export interface RemoteServices {
   agentPresets?: () => PresetDirectoryService | undefined
+  profilePresets?: () => ProfilePresetServices | undefined
+  presetManagement?: Pick<ProfilePresetManagement, 'read' | 'write'>
   connection: Pick<HostConnectionHandle, 'createSharedFetchHandler'>
   gateway: Pick<TypertGateway, 'wireStream'>
   modules: Pick<ClientModuleRegistry, 'graph' | 'onGraphChanged' | 'fetchBundle'>
   version: string
   attachments?: AttachmentServices
   attachmentOffice?: () => AttachmentOfficeProvider | undefined
-  jobControl?: () => (Pick<JobControl, 'generation' | 'stop'> & Partial<Pick<JobControl, 'output' | 'outputAvailable'>>) | undefined
+  jobControl?: () => (Pick<JobControl, 'generation' | 'stop'> & Partial<Pick<JobControl, 'output' | 'outputAvailable' | 'outputCoordinates'>>) | undefined
   commandOutput?: () => Pick<CommandOutput, 'generation' | 'available' | 'read'> | undefined
   settings?: () => Pick<SettingsProvider, 'describe' | 'get' | 'mutate' | 'writable'> | undefined
   modelDiscovery?: () => ModelDiscovery | undefined
   providerDirectory?: () => ProviderDirectory | undefined
+  accountModelAvailable?: (signal: AbortSignal) => Promise<boolean>
   computerKey?: ComputerKeyServices
   environment?: () => LaunchEnvironmentSnapshot
   feedbackNotifications?: Pick<FeedbackNotifications, 'follow'>
   taskNotifications?: Pick<TaskNotifications, 'follow' | 'pendingAvailable'>
+  subagentState?: Pick<SubagentServiceState, 'follow'>
   workspaceDesktop?: () => WorkspaceDesktopServices | undefined
   desktopApps?: () => DesktopAppServices | undefined
   cordisInspect?: () => CordisInspectService | undefined
@@ -61,6 +71,10 @@ export interface RemoteServices {
 const record = (value: unknown): Record<string, unknown> | undefined =>
   value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined
 const owner = (context: RemoteContext) => `${context.deviceId}:${context.connectionId}`
+
+// 新版仍在专项验收，只由隔离候选构建启用；正常交付不提前扩大兼容声明。
+declare const DSHM_LATEST_CANDIDATE: boolean
+const latestCandidate = typeof DSHM_LATEST_CANDIDATE !== 'undefined' && DSHM_LATEST_CANDIDATE
 
 /** 仅适配物理传输；参数解码、业务错误、原始流和审批竞争仍由 DSH Gateway 处理。 */
 export class RemoteAdapter {
@@ -106,7 +120,7 @@ export class RemoteAdapter {
     this.providerCreation = new ProviderCreation(() => services.settings?.(), () => services.providerDirectory?.(), () => !!services.computerKey?.credentials())
     this.providerModels = new ProviderModels(() => services.settings?.())
     this.deepSeekModels = new ProviderModels(() => services.settings?.(), 'llm-deepseek')
-    this.providerEndpoint = new ProviderEndpoint(() => services.settings?.())
+    this.providerEndpoint = new ProviderEndpoint(() => services.settings?.(), () => services.providerDirectory?.())
     if (services.computerKey) this.key = new ComputerKey(services.computerKey)
     if (services.environment) this.endpoint = new ComputerEndpoint(() => services.settings?.(), services.environment)
     if (services.computerKey) this.searchKey = new ComputerKey(services.computerKey, 'web-search-deepseek')
@@ -145,17 +159,19 @@ export class RemoteAdapter {
     try {
       const { operation, context } = frame
       if (!context || context.hostId !== this.hostId) throw new Error('remote_identity_denied')
-      if (this.services.version !== '0.1.6-alpha.2') throw new Error('unsupported_dsh_version')
+      if (this.services.version !== '0.1.6-alpha.2' && !(latestCandidate && isProfileDshVersion(this.services.version))) throw new Error('unsupported_dsh_version')
       if (operation.method === 'remote.negotiate') {
         emit({ type: 'result', id: frame.id, value: { transport: REMOTE_TRANSPORT_VERSION, dshVersion: this.services.version,
           management: context.management, channels: ['rpc', 'stream', 'graph', 'bundle', 'upload', 'prompt', 'office', 'changes', ...(this.services.attachments ? ['attachment'] : []), ...(this.services.attachments && this.services.attachmentOffice?.() ? ['attachmentOffice'] : [])],
           limits: { uploadBytes: MAX_UPLOAD_BYTES, chunkBytes: RESOURCE_CHUNK_BYTES, window: RESOURCE_WINDOW },
           jobControlGeneration: this.services.jobControl?.()?.generation,
           jobOutput: this.services.jobControl?.()?.outputAvailable === true,
+          jobOutputCoordinates: this.services.jobControl?.()?.outputCoordinates,
           commandOutputGeneration: this.services.commandOutput?.()?.available ? this.services.commandOutput()?.generation : undefined,
           planModeControl: true,
           officePriority: true,
           subagentPromptUpload: true,
+          subagentState: !!this.services.subagentState,
           workspaceManagement: true,
           sessionExport: true,
           desktopOpen: true,
@@ -173,6 +189,7 @@ export class RemoteAdapter {
           providerCreation: !!this.services.settings?.() && !!this.services.providerDirectory?.(),
           providerCreationModelRows: !!this.services.settings?.() && !!this.services.providerDirectory?.(),
           providerEndpoint: !!this.services.settings?.(),
+          providerEndpointResetPolicy: !!this.services.settings?.() && !!this.services.providerDirectory?.(),
           providerModels: !!this.services.settings?.(),
           deepSeekModels: !!this.services.settings?.(),
           providerModelDiscovery: !!this.services.settings?.() && !!this.services.modelDiscovery?.(),
@@ -180,6 +197,12 @@ export class RemoteAdapter {
           providerModelOverrides: !!this.services.settings?.(),
           providerKey: !!this.providerKey,
           pluginSettings: !!this.services.settings?.(),
+          presetDefaultSettings: latestCandidate && isProfileDshVersion(this.services.version)
+            && !!this.services.settings?.()?.describe({ redactSecrets: true }).some(view => view.ns === 'agent-preset-registry'),
+          presetProfileDirectory: latestCandidate && isProfileDshVersion(this.services.version) && !!this.services.profilePresets?.(),
+          presetProfileManagement: latestCandidate && isProfileDshVersion(this.services.version) && !!this.services.presetManagement,
+          codingToolsSettings: latestCandidate && isProfileDshVersion(this.services.version)
+            && !!this.services.settings?.()?.describe({ redactSecrets: true }).some(view => view.ns === 'ui-settings'),
           pluginOperationGeneration: this.pluginOperations.generation,
           subagentSettings: !!this.services.settings?.(),
           webSearchSettings: !!this.services.settings?.() && !!this.searchKey && !!this.searchEndpoint,
@@ -189,7 +212,16 @@ export class RemoteAdapter {
           taskNotifications: !!this.services.taskNotifications,
           taskNotificationPreview: this.services.taskNotifications ? 1 : undefined,
           taskPendingNotifications: this.services.taskNotifications?.pendingAvailable === true,
-          endpoints: remoteEndpoints(context.management, this.cordis.available), graphRevision: this.services.modules.graph().rev } })
+          endpoints: remoteEndpoints(context.management, this.cordis.available,
+            latestCandidate && isProfileDshVersion(this.services.version) ? 'target' : 'legacy',
+            this.services.version === '0.2.1-alpha.2'), graphRevision: this.services.modules.graph().rev } })
+      } else if (operation.method === 'remote.presetManagementRead' || operation.method === 'remote.presetCopy' || operation.method === 'remote.presetDelete') {
+        if (!context.management) throw Error('management_required')
+        if (!latestCandidate || !isProfileDshVersion(this.services.version) || !this.services.presetManagement) throw Error('remote_operation_denied')
+        const value = operation.method === 'remote.presetManagementRead'
+          ? await this.services.presetManagement.read(owner(context), operation.preset, signal)
+          : await this.services.presetManagement.write(owner(context), operation, signal)
+        emit({ type: 'result', id: frame.id, value })
       } else if (operation.method === 'remote.pluginOperationStart' || operation.method === 'remote.pluginOperationRead' || operation.method === 'remote.pluginOperations') {
         if (!context.management) throw new Error('management_required')
         // 接收者由中继鉴权提供；同设备换连接可查询，其他设备不能读该笔操作。
@@ -201,7 +233,7 @@ export class RemoteAdapter {
       } else if (operation.method === 'remote.endpointRead' || operation.method === 'remote.endpointWrite') {
         if (!context.management) throw new Error('management_required')
         if (typeof operation.target === 'object') {
-          const value = operation.method === 'remote.endpointRead' ? this.providerEndpoint.read(owner(context), operation.target.provider)
+          const value = operation.method === 'remote.endpointRead' ? this.providerEndpoint.read(owner(context), operation.target.provider, operation.resetPolicy === true)
             : await this.providerEndpoint.write(owner(context), operation, signal)
           emit({ type: 'result', id: frame.id, value })
           return
@@ -250,7 +282,8 @@ export class RemoteAdapter {
         emit({ type: 'result', id: frame.id, value })
       } else if (operation.method === 'remote.modelReadiness') {
         if (!context.management) throw new Error('management_required')
-        const value = await readModelReadiness({ settings: () => this.services.settings?.(), directory: () => this.services.providerDirectory?.(), key: this.services.computerKey }, signal)
+        const value = await readModelReadiness({ settings: () => this.services.settings?.(), directory: () => this.services.providerDirectory?.(),
+          key: this.services.computerKey, accountAvailable: this.services.accountModelAvailable }, signal)
         emit({ type: 'result', id: frame.id, value })
       } else if (operation.method === 'remote.providerCardRead') {
         if (!context.management) throw new Error('management_required')
@@ -263,8 +296,16 @@ export class RemoteAdapter {
           : operation.method === 'remote.providerSettingsRead' ? this.providerSettings.read(owner(context), operation.provider)
           : await this.providerSettings.write(owner(context), operation, signal)
         emit({ type: 'result', id: frame.id, value })
+      } else if (operation.method === 'remote.codingToolsRead') {
+        if (!latestCandidate || !isProfileDshVersion(this.services.version)) throw new Error('remote_settings_unavailable')
+        const view = this.services.settings?.()?.describe({ redactSecrets: true }).find(view => view.ns === 'ui-settings')
+        const enabled = view?.value && typeof view.value === 'object' ? Reflect.get(view.value, 'enabled') : undefined
+        if (typeof enabled !== 'boolean') throw new Error('remote_settings_unavailable')
+        emit({ type: 'result', id: frame.id, value: { enabled, ...(view?.documentId ? { documentId: view.documentId } : {}) } })
       } else if (operation.method === 'remote.settingsRead' || operation.method === 'remote.settingsWrite') {
         if (!context.management) throw new Error('management_required')
+        if (['agent-preset-registry', 'ui-settings'].includes(operation.namespace ?? '') && (!latestCandidate || !isProfileDshVersion(this.services.version)))
+          throw new Error('remote_settings_unavailable')
         const value = operation.method === 'remote.settingsRead' ? this.settings.read(owner(context), operation.namespace)
           : await this.settings.write(owner(context), operation, signal)
         emit({ type: 'result', id: frame.id, value })
@@ -339,7 +380,7 @@ export class RemoteAdapter {
         this.officeReaders++
         const window = new ResourceWindow(); this.resources.set(frame.id, window)
         emit({ type: 'event', id: frame.id, value: { type: 'converting' } })
-        try { await streamOffice(this.services.connection, frame.id, operation.sessionId, operation.path, signal, window, emit, operation.priority) }
+        try { await streamOffice(this.services.connection, frame.id, operation.sessionId, operation.path, signal, window, emit, operation.priority, this.services.version) }
         finally { this.officeReaders-- }
       } else if (operation.method === 'remote.prompt') {
         if (this.promptUploads >= 2) throw new Error('remote_prompt_busy')
@@ -400,6 +441,10 @@ export class RemoteAdapter {
           }
         } finally { await reader?.cancel(); reader?.releaseLock() }
         emit({ type: 'end', id: frame.id })
+      } else if (operation.method === 'remote.subagentStateFollow') {
+        if (!this.services.subagentState) throw new Error('remote_subagent_state_unavailable')
+        for await (const value of this.services.subagentState.follow(signal)) emit({ type: 'event', id: frame.id, value })
+        emit({ type: 'end', id: frame.id })
       } else if (operation.method === 'remote.taskFollow') {
         if (!this.services.taskNotifications) throw new Error('remote_task_notifications_unavailable')
         for await (const value of this.services.taskNotifications.follow(signal, operation.previewVersion)) {
@@ -420,16 +465,20 @@ export class RemoteAdapter {
       } else if (operation.method === 'remote.rpc' || operation.method === 'remote.stream') {
         const stream = operation.method === 'remote.stream'
         const permission = remotePermission(operation.endpoint, stream)
-        if (!permission || !remoteRequestAllowed(operation.endpoint, operation.payload)) throw new Error('remote_operation_denied')
+        const fileContract = latestCandidate && isProfileDshVersion(this.services.version) ? 'target' : 'legacy'
+        if (!permission || !remoteRequestAllowed(operation.endpoint, operation.payload, fileContract)) throw new Error('remote_operation_denied')
+        if (operation.endpoint === 'schedule/list' && this.services.version !== '0.2.1-alpha.2') throw new Error('remote_operation_denied')
         if (permission === 'management' && !context.management) throw new Error('management_required')
         if (operation.endpoint === 'settings/openAgentPresetDirectory') {
           const id = record(operation.payload.args)?.agentPreset as string
-          const value = await presetDirectory(() => this.services.agentPresets?.(), id, signal)
+          const value = latestCandidate && isProfileDshVersion(this.services.version)
+            ? await profilePresetDirectory(() => this.services.profilePresets?.(), id, signal)
+            : await presetDirectory(() => this.services.agentPresets?.(), id, signal)
           emit({ type: 'result', id: frame.id, value: { ok: true, value } })
           return
         }
         if (stream) {
-          const source = await this.services.gateway.wireStream.open(operation.endpoint, operation.payload, signal)
+          const source = await openGatewayStream(this.services.gateway, this.services.version, operation.endpoint, operation.payload, signal)
           for await (const value of source) {
             if (signal.aborted) break
             if (operation.endpoint === '$events') {
@@ -453,11 +502,13 @@ export class RemoteAdapter {
           const fetch = () => this.services.connection.createSharedFetchHandler('/api').fetch(new Request(
             `http://dsh.internal/api/${operation.endpoint}`, { method: 'POST', signal,
               headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ type: 'client-request', rpcId: frame.id, method: operation.endpoint, payload: operation.payload }) }))
+              body: JSON.stringify({ type: 'client-request', rpcId: frame.id, method: operation.endpoint,
+                payload: workspaceFilePayload(this.services.version, operation.endpoint, operation.payload) }) }))
           const response = operation.endpoint.startsWith('dynamicCordisRunner/')
             ? await this.cordis.run(owner(context), signal, fetch) : await fetch()
           if (!response.ok) { await response.body?.cancel(); throw new Error(`remote_http_${response.status}`) }
-          const envelope = record(await response.json())
+          const envelope = record(await (fileContract === 'target' && operation.endpoint === 'workspaceFiles/readBytes'
+            ? workspaceFileResponse(response, frame.id, signal) : response.json()))
           if (envelope?.type !== 'server-response' || envelope.rpcId !== frame.id || !record(envelope.result)) throw new Error('invalid_remote_response')
           const result: HostFrame = { type: 'result', id: frame.id, value: envelope.result }
           // UTF-8 页上限不等于 JSON 帧大小（引号/控制字符会膨胀）。保留原文件错误契约，

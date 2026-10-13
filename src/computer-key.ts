@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { symbols } from '@deepseek-ai/cordis'
 import { credentialRef, type CredentialProvider } from '@deepseek-ai/dsh-credentials'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
 import { computerKeyTargetSchema, computerKeyWriteSchema, type ComputerKeyWrite } from '@dsh-mobile/protocol'
 
 const defaultRef = 'DEEPSEEK_API_KEY'

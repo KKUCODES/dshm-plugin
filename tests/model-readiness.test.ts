@@ -11,7 +11,7 @@ function fixture() {
     listConfigurableProviders: () => [{ provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] as string[] }] }
   const services = { settings: () => settings, directory: () => directory,
     key: { credentials: () => credentials, settings: () => settings, revision: () => revision, enrollmentRef: 'ENROLL_ONLY' } }
-  return { read: (signal = new AbortController().signal) => readModelReadiness(services as unknown as Parameters<typeof readModelReadiness>[0], signal),
+  return { services, read: (signal = new AbortController().signal) => readModelReadiness(services as unknown as Parameters<typeof readModelReadiness>[0], signal),
     config: (value: unknown) => { config = value }, bump: () => { revision++ }, credentials, settings, directory, refs }
 }
 
@@ -26,6 +26,22 @@ test('官方活跃且缺少可写凭据才引导；只读和未启用不能提�
   expect(await f.read()).toEqual({ kind: 'provider-ready' })
   f.directory.listProviders = () => []; expect(await f.read()).toEqual({ kind: 'unavailable' })
   f.directory.listConfigurableProviders = () => []; expect(await f.read()).toEqual({ kind: 'adapter-absent' })
+})
+
+test('新版账号路由未登录不跳过 Key 引导，只有原账号适配器确认可用才结束引导', async () => {
+  const f = fixture()
+  f.directory.listProviders = () => [{ id: 'deepseek-official', name: 'DeepSeek' }, { id: 'deepseek-account', name: 'Account' }]
+  f.directory.listConfigurableProviders = () => [
+    { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
+    { provider: 'deepseek-account', displayName: 'Account', settingsNs: 'account-entry', settingsPath: [] },
+  ]
+  const services = { ...f.services, accountAvailable: async () => false }
+  const read = () => readModelReadiness(services as unknown as Parameters<typeof readModelReadiness>[0], new AbortController().signal)
+  expect(await read()).toEqual({ kind: 'credential-missing' })
+  services.accountAvailable = async () => true
+  expect(await read()).toEqual({ kind: 'provider-ready' })
+  services.accountAvailable = async () => { throw Error('account unavailable') }
+  expect(await read()).toEqual({ kind: 'credential-missing' })
 })
 
 test('无命名Key或无设置坐标的活跃提供方保持可用，不被官方Key状态误导', async () => {

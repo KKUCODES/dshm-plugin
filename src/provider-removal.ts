@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { symbols } from '@deepseek-ai/cordis'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
 import { providerRouteSchema, providerRemovalViewSchema, providerRemovalWriteSchema, type ProviderRemovalWrite } from '@dsh-mobile/protocol'
 
 type Provider = Pick<SettingsProvider, 'describe' | 'get' | 'mutate' | 'writable'>

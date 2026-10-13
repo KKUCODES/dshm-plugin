@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { afterEach, expect, test, vi } from 'vitest'
 import { Management } from '../src/management.js'
+import { Relay } from '../src/relay.js'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -114,4 +115,172 @@ test('legacy gateway 404 falls back to private enrollment, not open access', asy
       body: JSON.stringify({ action: 'setup', origin: 'http://127.0.0.1:8787', name: 'Legacy computer' }) }))
     expect(await response.json()).toEqual({ error: 'enrollment_credential_missing' })
   } finally { host.dispose() }
+})
+
+function configuredManagement(enabled = true, saveFailure = false) {
+  const payload = { origin: 'https://old.example.com', name: 'My computer', hostId: randomUUID(),
+    token: randomBytes(32).toString('base64url'), enabled }
+  const stored = { kind: 'grant' as const, payload }
+  const persist = vi.fn<ConstructorParameters<typeof Management>[0]['modifyRecord']>(async (_key, change) => {
+    if (saveFailure) throw new Error('credential_write_failed')
+    return change(stored)
+  })
+  const resolve = vi.fn(async () => { throw new Error('must not reuse old enrollment credential') })
+  const start = vi.spyOn(Relay.prototype, 'start').mockImplementation(() => {})
+  const stop = vi.spyOn(Relay.prototype, 'stop').mockImplementation(() => {})
+  const host = management({ readRecord: async () => stored, modifyRecord: persist, resolve })
+  const expectedRevision = host.configRevision
+  const submit = (action: string, extra: Record<string, unknown> = {}) => host.handle(new Request('http://localhost/api/dsh-mobile', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action,
+      origin: 'https://new.example.com', expectedRevision, confirmed: true, ...extra }),
+  }))
+  return { host, payload, persist, resolve, start, stop, submit }
+}
+
+test.each([true, false])('changing address keeps identity and device grants, preserving enabled=%s', async enabled => {
+  const f = configuredManagement(enabled)
+  const devices = [{ id: randomUUID(), name: 'My phone', key_thumbprint: 'public-fingerprint', status: 'active',
+    management: true, created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 60000).toISOString() }]
+  const request = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({ devices }))
+    .mockResolvedValueOnce(Response.json({ registrationMode: 'private' }))
+  try {
+    await f.host.initialize(); f.start.mockClear(); f.stop.mockClear()
+    const response = await f.submit('change-origin')
+    expect(response.status).toBe(200)
+    expect(f.persist).toHaveReturned()
+    expect(await f.persist.mock.results[0]!.value).toMatchObject({ payload: { ...f.payload, origin: 'https://new.example.com' } })
+    expect(f.stop).toHaveBeenCalledOnce()
+    if (enabled) expect(f.start).toHaveBeenCalledWith('https://new.example.com', f.payload.token, f.payload.hostId)
+    else expect(f.start).not.toHaveBeenCalled()
+    expect(request.mock.calls[0]![1]?.headers).not.toHaveProperty('authorization')
+    expect(request.mock.calls[1]![1]?.headers).toHaveProperty('authorization', 'Bearer ' + f.payload.token)
+    const status = await f.host.status()
+    expect(status).toMatchObject({ origin: 'https://new.example.com', hostId: f.payload.hostId,
+      devices: [{ id: devices[0]!.id, management: true }] })
+    expect(status).toHaveProperty('configRevision')
+    expect(request.mock.calls.every(([url]) => !String(url).endsWith('/v1/hosts'))).toBe(true)
+  } finally { f.host.dispose() }
+})
+
+test.each(['change-origin', 'replace-server'])('address action %s requires explicit confirmation before any credential use', async action => {
+  const f = configuredManagement(); const request = vi.spyOn(globalThis, 'fetch')
+  try {
+    await f.host.initialize(); f.start.mockClear(); f.stop.mockClear()
+    const response = await f.submit(action, { confirmed: false, ...(action === 'replace-server' ? { name: 'New computer' } : {}) })
+    expect(response.status).toBe(400)
+    expect(request).not.toHaveBeenCalled(); expect(f.persist).not.toHaveBeenCalled()
+    expect(f.start).not.toHaveBeenCalled(); expect(f.stop).not.toHaveBeenCalled()
+  } finally { f.host.dispose() }
+})
+
+test.each(['ftp://new.example.com', 'https://user:password@new.example.com', 'https://new.example.com/path'])('address change rejects %s without network calls', async origin => {
+  const f = configuredManagement(); const request = vi.spyOn(globalThis, 'fetch')
+  try {
+    await f.host.initialize(); f.stop.mockClear()
+    const response = await f.submit('change-origin', { origin })
+    expect(await response.json()).toEqual({ error: 'invalid_gateway_origin' })
+    expect(request).not.toHaveBeenCalled(); expect(f.persist).not.toHaveBeenCalled(); expect(f.stop).not.toHaveBeenCalled()
+  } finally { f.host.dispose() }
+})
+
+test.each(['unreachable', 'timeout', 'rejected', 'invalid_response', 'save_failed'] as const)('failed address change %s keeps original connection and configuration', async failure => {
+  const f = configuredManagement(true, failure === 'save_failed')
+  const request = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(Response.json({ registrationMode: 'open' }))
+  if (failure === 'rejected') request.mockResolvedValue(new Response(null, { status: 401 }))
+  else if (failure === 'invalid_response') request.mockResolvedValue(Response.json({ devices: 'invalid' }))
+  else if (failure === 'save_failed') request.mockResolvedValue(Response.json({ devices: [] }))
+  else request.mockRejectedValue(failure === 'timeout' ? new DOMException('diagnostic', 'TimeoutError') : new TypeError('diagnostic'))
+  try {
+    await f.host.initialize(); f.start.mockClear(); f.stop.mockClear()
+    const response = await f.submit('change-origin')
+    expect(response.status).toBe(400)
+    expect(f.stop).not.toHaveBeenCalled(); expect(f.start).not.toHaveBeenCalled()
+    expect(await f.host.status()).toMatchObject({ origin: f.payload.origin, hostId: f.payload.hostId, enabled: true })
+    expect((await response.text())).not.toContain(f.payload.token)
+  } finally { f.host.dispose() }
+})
+
+test.each(['open', 'private'])('new %s backend gets new identity without old credentials', async registrationMode => {
+  const f = configuredManagement(); const newId = randomUUID(), newToken = randomBytes(32).toString('base64url')
+  const enrollmentToken = randomBytes(32).toString('base64url')
+  const request = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({ devices: [] }))
+    .mockResolvedValueOnce(Response.json({ registrationMode })).mockResolvedValueOnce(Response.json({ id: newId, token: newToken }))
+  try {
+    await f.host.initialize(); f.start.mockClear(); f.stop.mockClear()
+    expect((await f.submit('replace-server', { name: 'New computer', enrollmentToken })).status).toBe(200)
+    expect(JSON.stringify(request.mock.calls)).not.toContain(f.payload.token)
+    expect(f.resolve).not.toHaveBeenCalled()
+    expect(f.start).toHaveBeenCalledWith('https://new.example.com', newToken, newId)
+    expect(await f.host.status()).toMatchObject({ hostId: newId, name: 'New computer', devices: [] })
+    expect(request.mock.calls[1]![1]?.headers).toEqual({ 'content-type': 'application/json',
+      ...(registrationMode === 'private' ? { authorization: 'Bearer ' + enrollmentToken } : {}) })
+  } finally { f.host.dispose() }
+})
+
+test('replacing a private server requires its entered key and does not resolve old local enrollment', async () => {
+  const f = configuredManagement()
+  const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ registrationMode: 'private' }))
+  try {
+    await f.host.initialize(); f.stop.mockClear()
+    expect(await (await f.submit('replace-server', { name: 'New computer' })).json()).toEqual({ error: 'enrollment_credential_missing' })
+    expect(f.resolve).not.toHaveBeenCalled(); expect(f.persist).not.toHaveBeenCalled(); expect(f.stop).not.toHaveBeenCalled()
+    expect(request).toHaveBeenCalledTimes(1)
+  } finally { f.host.dispose() }
+})
+
+test('stale and repeated address submissions do not register again or overwrite the current configuration', async () => {
+  const f = configuredManagement()
+  const request = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(Response.json({ registrationMode: 'open' }))
+    .mockResolvedValue(Response.json({ devices: [] }))
+  try {
+    await f.host.initialize()
+    expect((await f.submit('change-origin')).status).toBe(200)
+    request.mockClear(); f.persist.mockClear()
+    expect(await (await f.submit('change-origin', { origin: 'https://third.example.com' })).json()).toEqual({ error: 'connection_config_changed' })
+    expect(await (await f.submit('replace-server', { name: 'New computer' })).json()).toEqual({ error: 'connection_config_changed' })
+    expect(request).not.toHaveBeenCalled(); expect(f.persist).not.toHaveBeenCalled()
+  } finally { f.host.dispose() }
+})
+
+test.each(['registration_rejected', 'credential_rejected', 'save_failed'] as const)('new backend failure %s preserves the old identity and relay', async failure => {
+  const f = configuredManagement(true, failure === 'save_failed')
+  const request = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(Response.json({ registrationMode: 'open' }))
+  if (failure === 'registration_rejected') request.mockResolvedValueOnce(new Response(null, { status: 403 }))
+  else {
+    request.mockResolvedValueOnce(Response.json({ id: randomUUID(), token: randomBytes(32).toString('base64url') }))
+      .mockResolvedValueOnce(failure === 'credential_rejected' ? new Response(null, { status: 401 }) : Response.json({ devices: [] }))
+  }
+  try {
+    await f.host.initialize(); f.start.mockClear(); f.stop.mockClear()
+    expect((await f.submit('replace-server', { name: 'New computer' })).status).toBe(400)
+    expect(f.start).not.toHaveBeenCalled(); expect(f.stop).not.toHaveBeenCalled()
+    expect(JSON.stringify(request.mock.calls)).not.toContain(f.payload.token)
+    request.mockImplementation(async () => Response.json({ devices: [] }))
+    expect(await f.host.status()).toMatchObject({ origin: f.payload.origin, hostId: f.payload.hostId, enabled: true })
+  } finally { f.host.dispose() }
+})
+
+test('concurrent replacement requests with one revision create only one new host', async () => {
+  const f = configuredManagement()
+  const request = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(Response.json({ registrationMode: 'open' }))
+    .mockResolvedValueOnce(Response.json({ id: randomUUID(), token: randomBytes(32).toString('base64url') }))
+    .mockResolvedValueOnce(Response.json({ devices: [] }))
+  try {
+    await f.host.initialize()
+    const results = await Promise.all([f.submit('replace-server', { name: 'First' }), f.submit('replace-server', { name: 'Second' })])
+    expect(results.map(row => row.status)).toEqual([200, 400])
+    expect(await results[1]!.json()).toEqual({ error: 'connection_config_changed' })
+    expect(request.mock.calls.filter(([url]) => String(url).endsWith('/v1/hosts'))).toHaveLength(1)
+    expect(f.persist).toHaveBeenCalledOnce()
+  } finally { f.host.dispose() }
+})
+
+test('old edit forms are invalid after restarting the plugin, without changing stored credential format', async () => {
+  const f = configuredManagement(); const other = configuredManagement()
+  try {
+    await other.host.initialize()
+    vi.spyOn(globalThis, 'fetch')
+    const response = await other.submit('change-origin', { expectedRevision: f.host.configRevision })
+    expect(await response.json()).toEqual({ error: 'connection_config_changed' })
+  } finally { f.host.dispose(); other.host.dispose() }
 })

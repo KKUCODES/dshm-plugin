@@ -7,7 +7,7 @@ import { PairCard } from './pair-card.js'
 import { registerDesktopFeedbackSync } from './feedback-sync-slot.js'
 
 interface Device { id: string; name: string; fingerprint: string; status: 'pending' | 'active' | 'revoked'; management: boolean; expiresAt: string }
-interface Status { configured: boolean; connection: string; enabled?: boolean; origin?: string; name?: string; devices: Device[]; deviceError?: string }
+interface Status { configured: boolean; connection: string; enabled?: boolean; origin?: string; name?: string; configRevision?: string; devices: Device[]; deviceError?: string }
 interface ServerInfo { registrationMode: 'open' | 'private' }
 const stateLabels: Record<string, string> = { disabled: '已关闭', connecting: '正在连接', online: '已连接', reconnecting: '正在重连', credential_rejected: '凭据被拒绝或电脑连接重复' }
 const errors: Record<string, string> = {
@@ -19,12 +19,15 @@ const errors: Record<string, string> = {
   invalid_gateway_origin: '请输入 HTTP 或 HTTPS 服务根地址，不含路径、账号、查询参数或片段。',
   already_configured: '这台电脑已经完成注册。', gateway_http_401: '服务拒绝了凭据；首次注册时，请确认注册密钥与后端 ENROLLMENT_TOKEN 一致。',
   gateway_http_404: '设备状态已变化，请刷新后重试。',
+  connection_change_confirmation_required: '请先确认本次地址修改方式。',
+  connection_config_changed: '连接配置已在其他页面修改。请取消编辑，重新打开后再试。',
+  credential_write_failed: '无法保存电脑连接配置，原连接未更改，请重试。',
 }
 async function api<T>(body?: unknown): Promise<T> {
   const response = await fetch('/api/dsh-mobile', { method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store',
     headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(20000) })
   const data = await response.json()
-  if (!response.ok) throw new Error(errors[data.error] ?? '操作失败，请检查电脑连接和公网服务后重试。')
+  if (!response.ok) throw new Error(errors[data.error] ?? '操作失败，请检查电脑连接和公网服务后重试。', { cause: data.error })
   return data as T
 }
 function ManagementPanel() {
@@ -38,13 +41,16 @@ function ManagementPanel() {
   const mode = server?.origin === origin.trim() ? server.info?.registrationMode : undefined
   const [pair, setPair] = useState<{ link: string; expiresAt: string }>()
   const [grantDevice, setGrantDevice] = useState<string>()
+  const [editing, setEditing] = useState(false), [editKind, setEditKind] = useState<'same' | 'new'>('same')
+  const [editConfirmed, setEditConfirmed] = useState(false), [editRevision, setEditRevision] = useState<string>()
+  const [notice, setNotice] = useState('')
   const refresh = useCallback(async () => {
     try { setStatus(await api<Status>()); setPollError('') }
     catch (e) { setPollError(e instanceof Error ? e.message : '无法读取状态') }
   }, [])
   useEffect(() => { if (status?.configured) setEnrollmentToken('') }, [status?.configured])
   useEffect(() => {
-    if (status?.configured || !origin.trim()) return
+    if ((status?.configured && !editing) || !origin.trim()) return
     let active = true
     setServer(undefined)
     const address = origin.trim()
@@ -54,7 +60,7 @@ function ManagementPanel() {
       }).catch(e => { if (active) setServer({ origin: address, error: e instanceof Error ? e.message : '无法读取服务模式' }) })
     }, 400)
     return () => { active = false; clearTimeout(timer) }
-  }, [origin, status?.configured, modeAttempt])
+  }, [origin, status?.configured, editing, modeAttempt])
   useEffect(() => {
     let active = true, timer: ReturnType<typeof setTimeout>
     const poll = async () => {
@@ -70,17 +76,36 @@ function ManagementPanel() {
     return () => clearTimeout(timer)
   }, [pair])
   async function act(body: { action: string; [key: string]: unknown }) {
-    setBusy(true); setError('')
+    setBusy(true); setError(''); setNotice('')
     try {
       const result = await api<{ link: string; expiresAt: string }>(body)
       if (body.action === 'setup') setEnrollmentToken('')
       if (body.action === 'pair') setPair(result)
       if (body.action === 'approve' || body.action === 'revoke') { setConfirmed(undefined); setPair(undefined) }
+      if (body.action === 'change-origin' || body.action === 'replace-server') {
+        setEditing(false); setEnrollmentToken(''); setEditConfirmed(false); setConfirmed(undefined); setGrantDevice(undefined); setPair(undefined)
+        setNotice(body.action === 'change-origin'
+          ? '服务地址已更新，电脑身份和原设备授权已保留。手机不会自动更新地址，请使用新配对链接重新连接。'
+          : '已切换到新服务，请重新配对手机。旧服务上的设备授权不会自动撤销。')
+      }
       await refresh()
-    } catch (e) { setError(e instanceof Error ? e.message : '操作失败'); if (body.action === 'setup') setModeAttempt(value => value + 1) }
+    } catch (e) {
+      setError(e instanceof Error
+        ? body.action === 'change-origin' && e.cause === 'gateway_http_401'
+          ? '新地址不接受当前电脑凭据。请确认地址属于同一后端；若换了服务，选择“更换后端”重新注册。'
+          : e.message
+        : '操作失败')
+      if (body.action === 'setup' || body.action === 'replace-server') setModeAttempt(value => value + 1)
+    }
     finally { setBusy(false) }
   }
-  const insecure = /^http:/i.test((status?.configured ? status.origin ?? '' : origin).trim())
+  function editConnection() {
+    setOrigin(status?.origin ?? ''); setName(status?.name ?? '我的电脑'); setEditRevision(status?.configRevision)
+    setEditKind('same'); setEditConfirmed(false); setEnrollmentToken(''); setServer(undefined); setPair(undefined); setError(''); setNotice(''); setEditing(true)
+  }
+  function cancelEdit() { setEditing(false); setEnrollmentToken(''); setEditConfirmed(false); setError('') }
+  const replacing = editing && editKind === 'new'
+  const insecure = /^http:/i.test((status?.configured && !editing ? status.origin ?? '' : origin).trim())
   return <section className="dshm" aria-label="DSH Mobile 电脑连接" aria-busy={busy}>
     <style>{panelStyles}</style>
     <header className="dm-head">
@@ -90,32 +115,62 @@ function ManagementPanel() {
       </span>
     </header>
     {(error || pollError) && <p className="dm-notice dm-notice-error" role="alert">{error || pollError}</p>}
+    {notice && <p className="dm-note dm-result" role="status">{notice}</p>}
     {insecure && <aside className="dm-notice" role="status">
       <strong>HTTP 连接不安全</strong>连接未加密，凭据和聊天内容可能被窃听或篡改。你仍可继续连接，建议使用 HTTPS。
     </aside>}
     {!status ? <div className="dm-loading" aria-label="正在读取连接状态"><div className="dm-skeleton" /><div className="dm-skeleton" /></div> : <>
-      {!status.configured ? <form className="dm-form" onSubmit={event => { event.preventDefault(); if (mode) void act({ action: 'setup', origin: origin.trim(), name, ...(mode === 'private' && enrollmentToken.trim() ? { enrollmentToken: enrollmentToken.trim() } : {}) }) }}>
+      {!status.configured || editing ? <form className="dm-form" aria-label={editing ? '修改服务地址' : '注册电脑'} onSubmit={event => {
+        event.preventDefault()
+        if (!mode || (editing && (!editConfirmed || !editRevision))) return
+        const registration = { name, ...(mode === 'private' && enrollmentToken.trim() ? { enrollmentToken: enrollmentToken.trim() } : {}) }
+        void act(editing
+          ? { action: replacing ? 'replace-server' : 'change-origin', origin: origin.trim(), expectedRevision: editRevision,
+            confirmed: editConfirmed, ...(replacing ? registration : {}) }
+          : { action: 'setup', origin: origin.trim(), ...registration })
+      }}>
+        {editing && <>
+          <h3>修改服务地址</h3>
+          <p className="dm-help">当前服务：{status.origin}。保存成功前，继续使用原连接。</p>
+          <fieldset className="dm-choices"><legend className="dm-label">这次修改属于哪种情况？</legend>
+            <label className="dm-check"><input type="radio" name={fieldId + '-kind'} checked={editKind === 'same'} disabled={busy} onChange={() => { setEditKind('same'); setEditConfirmed(false); setEnrollmentToken(''); setError('') }} />同一后端换地址，保留设备授权</label>
+            <label className="dm-check"><input type="radio" name={fieldId + '-kind'} checked={editKind === 'new'} disabled={busy} onChange={() => { setEditKind('new'); setEditConfirmed(false); setEnrollmentToken(''); setError('') }} />更换后端，重新注册和配对</label>
+          </fieldset>
+        </>}
         <div className="dm-fields">
           <div className="dm-field">
             <label className="dm-label" htmlFor={fieldId + '-origin'}>服务地址</label>
-            <input className="dm-input" id={fieldId + '-origin'} aria-describedby={fieldId + '-origin-help'} required disabled={busy} type="url" placeholder="https://relay.example.com" value={origin} onChange={e => { setOrigin(e.target.value); setServer(undefined); setEnrollmentToken('') }} />
+            <input className="dm-input" id={fieldId + '-origin'} aria-describedby={fieldId + '-origin-help'} required disabled={busy} type="url" placeholder="https://relay.example.com" value={origin} onChange={e => { setOrigin(e.target.value); setServer(undefined); setEnrollmentToken(''); setEditConfirmed(false); setError('') }} />
             <p className="dm-help" id={fieldId + '-origin-help'}>支持 HTTP / HTTPS，填写根地址即可。</p>
           </div>
-          <div className="dm-field">
+          {(!editing || replacing) && <div className="dm-field">
             <label className="dm-label" htmlFor={fieldId + '-name'}>电脑名称</label>
             <input className="dm-input" id={fieldId + '-name'} required disabled={busy} maxLength={80} value={name} onChange={e => setName(e.target.value)} />
-          </div>
+          </div>}
         </div>
         <div className="dm-note" role="status">
-          {mode === 'open' ? '开放使用 · 无需注册密钥，可直接注册这台电脑。' : mode === 'private' ? '个人使用 · 需要注册密钥，或使用本机已配置的注册凭据。' : server?.error ? <>{server.error} <button className="dm-button" type="button" onClick={() => setModeAttempt(value => value + 1)}>重新检测</button></> : origin.trim() ? '正在检测服务模式…' : '填写服务地址后，将自动检测注册方式。'}
+          {editing && !replacing && mode ? '服务可访问。保存时将验证当前电脑凭据，不需要重新填写注册密钥。'
+            : mode === 'open' ? '开放使用 · 无需注册密钥，可直接注册这台电脑。'
+            : mode === 'private' ? replacing ? '个人使用 · 请填写新服务的注册密钥。' : '个人使用 · 需要注册密钥，或使用本机已配置的注册凭据。'
+            : server?.error ? <>{server.error} <button className="dm-button" type="button" onClick={() => setModeAttempt(value => value + 1)}>重新检测</button></>
+            : origin.trim() ? '正在检测服务模式…' : '填写服务地址后，将自动检测注册方式。'}
         </div>
-        {mode === 'private' && <div className="dm-field">
+        {mode === 'private' && (!editing || replacing) && <div className="dm-field">
           <label className="dm-label" htmlFor={fieldId + '-enrollment'}>注册密钥</label>
-          <input className="dm-input" id={fieldId + '-enrollment'} aria-describedby={fieldId + '-enrollment-help'} type="password" autoComplete="off" spellCheck={false} autoCapitalize="none" disabled={busy} maxLength={256} placeholder="粘贴后端 ENROLLMENT_TOKEN" value={enrollmentToken} onChange={e => setEnrollmentToken(e.target.value)} />
-          <p className="dm-help" id={fieldId + '-enrollment-help'}>仅首次注册使用，成功后清空。留空时尝试读取本机已配置的注册凭据。</p>
+          <input className="dm-input" id={fieldId + '-enrollment'} aria-describedby={fieldId + '-enrollment-help'} type="password" autoComplete="off" spellCheck={false} autoCapitalize="none" required={replacing} disabled={busy} maxLength={256} placeholder="粘贴后端 ENROLLMENT_TOKEN" value={enrollmentToken} onChange={e => setEnrollmentToken(e.target.value)} />
+          <p className="dm-help" id={fieldId + '-enrollment-help'}>{replacing ? '只用于注册新服务，成功后清空；不会使用旧服务的注册凭据。' : '仅首次注册使用，成功后清空。留空时尝试读取本机已配置的注册凭据。'}</p>
         </div>}
-        <p className="dm-note">注册成功后，插件会保存这台电脑的独立凭据。之后正常启动 dsh 即可，无需再次填写注册密钥。</p>
-        <div className="dm-actions"><button className="dm-button dm-primary" disabled={busy || !mode} type="submit">{busy ? '正在注册…' : '注册这台电脑'}</button></div>
+        {editing ? <>
+          <p className="dm-note">{replacing
+            ? '新服务不继承旧设备授权，手机需要重新配对。旧服务上的授权不会自动撤销；更换前可先撤销不再使用的设备。'
+            : '仅用于同一个后端换域名、端口或 HTTP / HTTPS。保存后保留电脑身份和原设备授权；手机仍保存旧地址，需要使用新配对链接重新连接。'}</p>
+          <label className="dm-check"><input type="checkbox" checked={editConfirmed} disabled={busy} onChange={e => setEditConfirmed(e.target.checked)} />{replacing
+            ? '我了解手机需要重新配对，旧服务授权不会自动撤销'
+            : '我确认新地址属于同一可信服务，允许用当前电脑凭据验证'}</label>
+        </> : <p className="dm-note">注册成功后，插件会保存这台电脑的独立凭据。之后正常启动 dsh 即可，无需再次填写注册密钥。</p>}
+        <div className="dm-actions"><button className="dm-button dm-primary" disabled={busy || !mode || (editing && (!editConfirmed || !editRevision || (!replacing && origin.trim() === status.origin)))} type="submit">{busy ? editing ? '正在检查并保存…' : '正在注册…' : editing ? replacing ? '注册并切换服务' : '保存服务地址' : '注册这台电脑'}</button>
+          {editing && <button className="dm-button" type="button" disabled={busy} onClick={cancelEdit}>取消</button>}
+        </div>
       </form> : <>
         <div className="dm-connection">
           <div><h3>{status.name}</h3><p className="dm-address">{status.origin}</p></div>
@@ -123,6 +178,7 @@ function ManagementPanel() {
             <button className={'dm-button' + (status.enabled ? '' : ' dm-primary')} disabled={busy} onClick={() => void act({ action: status.enabled ? 'disable' : 'enable' })}>{status.enabled ? '关闭远程连接' : '开启远程连接'}</button>
             {status.enabled && status.connection !== 'online' && <button className="dm-button" disabled={busy} onClick={() => void act({ action: 'enable' })}>重新连接</button>}
             <button className="dm-button" disabled={busy} onClick={() => void act({ action: 'pair' })}>生成一次性配对链接</button>
+            <button className="dm-button" disabled={busy} onClick={editConnection}>修改服务地址</button>
             {busy && <span className="dm-help" role="status">正在处理…</span>}
           </div>
         </div>

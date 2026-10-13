@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { symbols } from '@deepseek-ai/cordis'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
 import type { ProviderDirectory } from './provider-creation.js'
 import { providerProtocolChoices } from './provider-protocol.js'
 import { providerRouteSchema, providerSettingValues, providerSettingsViewSchema, providerDirectorySchema,

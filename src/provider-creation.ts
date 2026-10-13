@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { symbols } from '@deepseek-ai/cordis'
 import { providerProtocolChoices } from './provider-protocol.js'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
 import type { LlmRuntime } from '@deepseek-ai/dsh-llm'
 import { providerCreationViewSchema, providerCreationWriteSchema, type ProviderCreationWrite } from '@dsh-mobile/protocol'
 

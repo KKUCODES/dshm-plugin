@@ -1,4 +1,5 @@
-import type { Context } from '@deepseek-ai/cordis'
+import { isProfileDshVersion } from './profile-dsh-version.js'
+import { symbols, type Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-api-session-controller'
@@ -12,15 +13,17 @@ import { createRequire } from 'node:module'
 import { Management } from './management.js'
 import type { PluginConfig } from './config.js'
 import { JobControl } from './job-control.js'
-import { CommandOutput } from './command-output.js'
 import { FeedbackNotifications } from './feedback-notifications.js'
 import { TaskNotifications } from './task-notifications.js'
-import { pendingNotificationsOf } from './pending-notifications.js'
 import { registerFeedbackEvents } from './feedback-events.js'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
 import type { WorkspaceDesktopServices } from './workspace-desktop.js'
-import type { DesktopAppServices } from './desktop-apps.js'
-import { cordisInspectService } from './cordis-connections.js'
+import { ProfileSettings, type ProfileSettingsForms, type ProfileSettingsEntry } from './profile-settings.js'
+import type { SettingsAccess } from './settings-access.js'
+import { profileProviders } from './profile-providers.js'
+import type { LlmRuntime } from '@deepseek-ai/dsh-llm'
+import type { ProfilePresetEditor } from './profile-preset-directory.js'
+import { SubagentServiceState } from './subagent-service-state.js'
 
 export const name = 'dsh-mobile'
 export const inject = ['sessionController', 'credentials', 'connection', 'typertGateway', 'clientModules', 'attachments']
@@ -33,9 +36,39 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   const require = createRequire(import.meta.url)
   const version: string = require('@deepseek-ai/dsh-api-gateway/package.json').version
   const moduleVersion: string = require('@deepseek-ai/dsh-client-modules/package.json').version
+  const presetServices = () => {
+    const presets = ctx.get('agentPresets'), editor = ctx.get('configEditor') as ProfilePresetEditor | undefined
+    return presets && editor ? { presets, editor } : undefined
+  }
+  // 预设归档依赖旧本体补丁；纯插件启动不创建此服务，保留官方预设读取入口。
+  let profileSettings: { forms: unknown; editor: unknown; value: ProfileSettings } | undefined
+  const settings = (): SettingsAccess | undefined => {
+    const forms = ctx.get('settings') as ProfileSettingsForms | SettingsAccess | undefined
+    if (!forms) return undefined
+    if (!isProfileDshVersion(version)) return 'get' in forms ? forms : undefined
+    if ('get' in forms) return undefined
+    const editor = ctx.get('configEditor') as { entries(): ProfileSettingsEntry[] } | undefined
+    if (!editor) return undefined
+    const identity = (value: object) => Reflect.get(value, symbols.original) ?? value
+    const formIdentity = identity(forms), editorIdentity = identity(editor)
+    if (!profileSettings || profileSettings.forms !== formIdentity || profileSettings.editor !== editorIdentity)
+      profileSettings = { forms: formIdentity, editor: editorIdentity, value: new ProfileSettings(forms, () => editor.entries()) }
+    return profileSettings.value
+  }
+  let providerAdapter: { runtime: unknown; settings: ProfileSettings; value: ReturnType<typeof profileProviders> } | undefined
+  const providers = () => {
+    const runtime = ctx.get('llm') as LlmRuntime | undefined
+    if (!runtime || !isProfileDshVersion(version)) return runtime
+    const view = settings()
+    if (!(view instanceof ProfileSettings)) return undefined
+    const runtimeIdentity = Reflect.get(runtime, symbols.original) ?? runtime
+    if (!providerAdapter || providerAdapter.runtime !== runtimeIdentity || providerAdapter.settings !== view)
+      providerAdapter = { runtime: runtimeIdentity, settings: view, value: profileProviders(runtime, view) }
+    return providerAdapter.value
+  }
   let jobControl: JobControl | undefined
   ctx.inject(['jobs', 'agents'], scope => {
-    const control = new JobControl(scope)
+    const control = new JobControl(scope, version)
     jobControl = control
     scope.effect(() => () => { control.dispose(); if (jobControl === control) jobControl = undefined }, 'dsh-mobile: job controller')
   })
@@ -46,20 +79,10 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     workspaceDesktop = services
     scope.effect(() => () => { if (workspaceDesktop === services) workspaceDesktop = undefined }, 'dsh-mobile: desktop file services')
   })
-  let commandOutput: CommandOutput | undefined
-  let desktopApps: DesktopAppServices | undefined
-  ctx.inject(['fs', 'dshmDesktopApps'], scope => {
-    const services = { fs: scope.fs, sessions: scope.sessionController, apps: scope.dshmDesktopApps }
-    desktopApps = services
-    scope.effect(() => () => { if (desktopApps === services) desktopApps = undefined }, 'dsh-mobile: desktop application services')
-  })
-  ctx.inject(['tools', 'shell', 'agents'], scope => {
-    const output = new CommandOutput(scope)
-    commandOutput = output
-    scope.effect(() => () => { output.dispose(); if (commandOutput === output) commandOutput = undefined }, 'dsh-mobile: command output')
-  })
   const feedbackNotifications = new FeedbackNotifications(ctx)
-  const taskNotifications = new TaskNotifications(ctx, () => pendingNotificationsOf(ctx.typertGateway))
+  // 只订阅官方会话结算；旧补丁的输出、应用、动态目录及待审批旁路不接入产品。
+  const taskNotifications = new TaskNotifications(ctx)
+  const subagentState = new SubagentServiceState(ctx)
   registerFeedbackEvents(ctx, feedbackNotifications)
   // 模型与搜索可使用电脑自定义引用；任何引用更新都保守地使旧密码窗口快照失效。
   ctx.on('credentials/reference-updated', () => { credentialRevision++ })
@@ -68,18 +91,25 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     attachments: { sessions: ctx.sessionController, store: ctx.attachments },
     attachmentOffice: () => ctx.get('officeToPdf'),
     jobControl: () => jobControl,
-    commandOutput: () => commandOutput,
-    settings: () => ctx.get('settings'),
+    settings,
     agentPresets: () => ctx.get('agentPresets'),
-    modelDiscovery: () => ctx.get('llm'),
-    providerDirectory: () => ctx.get('llm'),
+    profilePresets: isProfileDshVersion(version) ? presetServices : undefined,
+    modelDiscovery: providers,
+    providerDirectory: providers,
+    accountModelAvailable: isProfileDshVersion(version) ? async signal => {
+      signal.throwIfAborted()
+      const runtime = ctx.get('llm')
+      if (!runtime) return false
+      const models = await runtime.listModels('deepseek-account')
+      signal.throwIfAborted()
+      return models.length > 0
+    } : undefined,
     environment: () => launchEnvironmentOf(ctx),
     feedbackNotifications,
     taskNotifications,
+    subagentState,
     workspaceDesktop: () => workspaceDesktop,
-    desktopApps: () => desktopApps,
-    cordisInspect: () => cordisInspectService(ctx.get('cordisInspect'), ctx.get('dynamicCordisRunner')),
-    computerKey: { credentials: () => ctx.get('credentials'), settings: () => ctx.get('settings'),
+    computerKey: { credentials: () => ctx.get('credentials'), settings,
       revision: () => credentialRevision, enrollmentRef: config.enrollmentRef ?? 'DSH_MOBILE_ENROLLMENT_TOKEN' },
     version: version === moduleVersion ? version : 'incompatible',
   })

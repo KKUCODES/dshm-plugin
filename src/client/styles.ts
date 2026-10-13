@@ -24,6 +24,9 @@ export const panelStyles = `
 .dshm .dm-status[data-state="connecting"], .dshm .dm-status[data-state="reconnecting"] { color: var(--dm-warning); }
 .dshm .dm-status[data-state="credential_rejected"] { color: var(--dm-error); }
 .dshm .dm-form { display: grid; gap: 20px; }
+.dshm .dm-choices { display: grid; gap: 10px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.dshm .dm-choices legend { margin-bottom: 10px; }
+.dshm .dm-result { margin-bottom: 18px; }
 .dshm .dm-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; }
 .dshm .dm-field { display: grid; align-content: start; gap: 7px; min-width: 0; }
 .dshm .dm-label { font-size: 13px; font-weight: 500; }

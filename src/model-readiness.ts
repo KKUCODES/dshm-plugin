@@ -1,6 +1,6 @@
 import { symbols } from '@deepseek-ai/cordis'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
 import type { ProviderDirectory } from './provider-creation.js'
 import type { ComputerKeyServices } from './computer-key.js'
 
@@ -8,6 +8,7 @@ type Services = {
   settings: () => Pick<SettingsProvider, 'get' | 'describe' | 'writable'> | undefined
   directory: () => ProviderDirectory | undefined
   key: ComputerKeyServices | undefined
+  accountAvailable?: (signal: AbortSignal) => Promise<boolean>
 }
 const identity = (value: object) => Reflect.get(value, symbols.original) ?? value
 const child = (value: unknown, key: string): unknown => value !== null && typeof value === 'object'
@@ -36,7 +37,13 @@ export async function readModelReadiness(services: Services, signal: AbortSignal
   try {
     signal.throwIfAborted()
     const before = capture()
-    const refs = [...new Set(before.rows.map(row => row.ref ?? `${row.provider.toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_API_KEY`))]
+    // 新版账号路由没有 apiKeyEnv；是否可用须由原账号适配器确认，不能当成免认证路由。
+    let accountReady = false
+    if (before.rows.some(row => row.active && row.provider === 'deepseek-account')) {
+      try { accountReady = await services.accountAvailable?.(signal) === true } catch { signal.throwIfAborted() }
+    }
+    const refs = [...new Set(before.rows.filter(row => row.provider !== 'deepseek-account')
+      .map(row => row.ref ?? `${row.provider.toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_API_KEY`))]
     let statuses = new Map<string, { configured: boolean; writable: boolean }>(), failed = false
     try {
       // 与原批量describe一致：任一读取失败则整个凭据补充不可用；无认证路由仍可用。
@@ -53,7 +60,8 @@ export async function readModelReadiness(services: Services, signal: AbortSignal
       || before.writable !== after.writable || before.directoryState !== after.directoryState
       || before.configs.size !== after.configs.size || [...before.configs].some(([ns, config]) => after.configs.get(ns) !== config))
       throw Error('remote_settings_stale')
-    if (before.unmanaged || before.rows.some(row => row.active && (row.ref === undefined || statuses.get(row.ref)?.configured === true)))
+    if (before.unmanaged || before.rows.some(row => row.active && (row.provider === 'deepseek-account' ? accountReady
+      : row.ref === undefined || statuses.get(row.ref)?.configured === true)))
       return { kind: 'provider-ready' }
     const official = before.rows.find(row => row.provider === 'deepseek-official' && row.settingsNs === 'llm-deepseek' && row.settingsPath.length === 0)
     if (!official) return { kind: 'adapter-absent' }

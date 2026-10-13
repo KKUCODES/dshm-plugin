@@ -1,5 +1,9 @@
 # 电脑兼容补丁交付核对
 
+固定新版的[Windows已有文件权限人工修复工具](./latest-upstream/acl-repair.md)提供独立生成、修复和备份恢复说明。生成器不执行权限修改，原失败路径已通过两种实际手机入口；此工具不在当前tgz内，也不替代下述旧版补丁组合或完整新版支持验收。
+
+上游升级检查见[DSH 0.2.1-alpha.1 兼容报告](./latest-upstream/README.md)。隔离候选已通过新版实际 Host 加载及基础会话协议同步；手机 UI、Android 与完整补丁组合仍未完成。下述交付组合只针对旧基线，不能直接套用新版。
+
 - 状态：本机 DSH `0.1.6-alpha.2` 的已交付组合已做只读文件核对；不代表完整 Remote 功能验收完成。
 - 维护角色：项目协作 Agent；最近核验：2026-10-03。
 - 来源：[只读检查器](../scripts/check-installed-compatibility.mjs)、[当前文件报告](../artifacts/installed-compatibility-current.json)、[组合链回归](../tests/compatibility-chain.test.mjs)及下表各独立补丁。

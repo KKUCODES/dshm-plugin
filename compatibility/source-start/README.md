@@ -1,11 +1,15 @@
 # 源码启动模块身份修复
 
 - 状态：已交付固定基线的安装/恢复器，并应用到本机 DSH；`pnpm dsh web` 启动及 MuMu 后台独立输出、模型后续读取通过。完整 Remote 仍在实施。
-- 维护角色：DSH Mobile 项目协作 Agent；最近核验：2026-09-25。
+- 维护角色：DSH Mobile 项目协作 Agent；最近核验：2026-10-05。
 - 基线：DSH `0.1.6-alpha.2` / `ddefc45fbc7f8e46dd73185e68295696d1297887`；实际安装 `F:/Program Files/deepseek-harness`，Node `24.11.0`，随该安装 tsx 使用的 get-tsconfig `5.0.0-beta.5`。
 - 上游参考检出只读；与[后台输出源码补丁](../background-output/README.md)分开，不能用本项测试代替后台输出源码链路验收。
 
 ## 原因与方案取舍
+
+新版 `0.2.1-alpha.1` 的原 profile 解析器已修复下述旧版的主要 ESM 分裂，但实际 CommonJS 和 Harness Worker 仍有类/Symbol 分裂。[固定新版对照](../latest-upstream/source-identity-probe.mjs)沿用新版原 `createRuntimeResolution/installRuntimeInterception/registerWorkerResolution`，在原 Cordis/ToolRuntime 中实际调度工具：原始 ESM/子路径/外部ESM一致、工具成功，CJS与Worker不一致；同安装解析补充后全部一致，插件自己的固定依赖版本保持。首次探针沿用已经移除的旧`tools/invariant`子路径而失败，核对新版exports后改用公开`tools/presentation`，未放宽包导出。
+
+[安装器](./install.mjs)现按两种**精确基线**分别核验六个源码哈希，新版记录为`source-start-v2`，旧版保持`source-start-v1`。新旧LF/CRLF、幂等安装恢复、未知源码/脚本/载荷及链接拒绝共七项测试通过。新版[实际交付探针](../../scripts/verify-latest-source-delivery.mjs)在完整隔离检出安装两个引导文件和根dsh脚本，原 `pnpm dsh web` 加载候选、登录、首页/空会话及设置接口通过，安装载荷下CJS/Worker身份和实际工具调度通过；最终恢复原package.json字节、移除两个载荷并核对Git干净。证据：[对照](../../artifacts/latest-runtime-check/latest-source-identity.json)、[安装启动与恢复](../../artifacts/latest-runtime-check/latest-source-delivery.json)。这只交付启动身份边界，七项新版运行补丁的源码迁移、源码完整Remote仍未完成；日常F盘安装没有改变。下文旧版现场结果不外推到新版。
 
 原根脚本 `node --import tsx/esm apps/cli/src/bin.ts` 在早期加载时通过 tsconfig 路径映射取得源码模块；原 profile resolver 将配置中的模块解析到安装包的 `lib`。外部插件位于 `node_modules`，tsx 又明确跳过这类 importer 的路径映射。因此同进程出现两份 tools 的类和唯一 Symbol，原调度器访问另一份服务的 `prepare` 时为 undefined。
 

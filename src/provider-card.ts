@@ -1,7 +1,7 @@
 import { symbols } from '@deepseek-ai/cordis'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { providerCardViewSchema } from '@dsh-mobile/protocol'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
 import type { ProviderDirectory } from './provider-creation.js'
 import type { ComputerKeyServices } from './computer-key.js'
 

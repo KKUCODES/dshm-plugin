@@ -2,17 +2,19 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdir, mkdtemp, readFile, writeFile, symlink, unlink } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { inputs, outputRoot, originalCommand, patchedCommand, installStartup } from './install.mjs';
+import { existsSync } from 'node:fs';
+import { inputs, latestInputs, outputRoot, originalCommand, patchedCommand, installStartup } from './install.mjs';
 import { sourceRoot } from '../background-output/prepare.mjs';
 
-async function fixture(crlf = false) {
+const latestSource = resolve(import.meta.dirname, '../../artifacts/latest-source-check');
+async function fixture(crlf = false, latest = false) {
   await mkdir(outputRoot, { recursive: true });
   const root = await mkdtemp(resolve(outputRoot, 'install-test-'));
-  for (const [path] of inputs) {
+  for (const [path] of latest ? latestInputs : inputs) {
     await mkdir(dirname(resolve(root, path)), { recursive: true });
-    await writeFile(resolve(root, path), await readFile(resolve(sourceRoot, path)));
+    await writeFile(resolve(root, path), await readFile(resolve(latest ? latestSource : sourceRoot, path)));
   }
-  const manifest = { name: '@deepseek-ai/dsh-root', version: '0.1.6-alpha.2', scripts: { dsh: originalCommand, custom: 'user command' }, user: '保持用户字段' };
+  const manifest = { name: '@deepseek-ai/dsh-root', version: latest ? '0.2.1-alpha.1' : '0.1.6-alpha.2', scripts: { dsh: originalCommand, custom: 'user command' }, user: '保持用户字段' };
   const original = JSON.stringify(manifest, null, 2).replaceAll('\n', crlf ? '\r\n' : '\n') + (crlf ? '\r\n' : '\n');
   await writeFile(resolve(root, 'package.json'), original);
   return { root, original };
@@ -26,6 +28,33 @@ for (const crlf of [false, true]) test(`install/restore keeps original package b
   assert.equal((await installStartup('restore', root)).written, 3);
   assert.equal((await installStartup('restore', root)).written, 0);
   assert.equal(await readFile(resolve(root, 'package.json'), 'utf8'), original);
+});
+
+for (const crlf of [false, true]) test(`latest fixed source installs/restores (${crlf ? 'CRLF' : 'LF'})`, { skip: !existsSync(latestSource) }, async () => {
+  const { root, original } = await fixture(crlf, true);
+  const plan = await installStartup('plan', root);
+  assert.equal(plan.baseline, '0.2.1-alpha.1');
+  assert.equal(plan.patchVersion, 'source-start-v2');
+  assert.equal((await installStartup('apply', root)).written, 3);
+  assert.equal((await installStartup('apply', root)).written, 0);
+  assert.equal((await installStartup('restore', root)).written, 3);
+  assert.equal((await installStartup('restore', root)).written, 0);
+  assert.equal(await readFile(resolve(root, 'package.json'), 'utf8'), original);
+});
+
+test('latest requires every fixed input and rejects adjacent versions before writes', { skip: !existsSync(latestSource) }, async () => {
+  const { root, original } = await fixture(false, true);
+  for (const [local] of latestInputs) {
+    const file = resolve(root, local), before = await readFile(file);
+    await writeFile(file, Buffer.concat([before, Buffer.from('\n// unverified customization\n')]));
+    await assert.rejects(installStartup('apply', root), /baseline mismatch/);
+    assert.equal(await readFile(resolve(root, 'package.json'), 'utf8'), original);
+    assert.equal(existsSync(resolve(root, '.dshm-source/register.mjs')), false);
+    await writeFile(file, before);
+  }
+  await writeFile(resolve(root, 'package.json'), original.replace('0.2.1-alpha.1', '0.2.1-alpha.2'));
+  await assert.rejects(installStartup('apply', root), /version mismatch/);
+  assert.equal(existsSync(resolve(root, '.dshm-source/register.mjs')), false);
 });
 test('refuses unknown script/source/payload and preserves unrelated user edits during restore', async () => {
   const { root, original } = await fixture();

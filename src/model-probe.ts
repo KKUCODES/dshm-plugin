@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { symbols } from '@deepseek-ai/cordis'
-import type { SettingsProvider } from '@deepseek-ai/dsh-settings'
+import type { SettingsAccess as SettingsProvider } from './settings-access.js'
 import type { LlmRuntime } from '@deepseek-ai/dsh-llm'
 import { modelProbePrepareSchema, modelProbeExecuteSchema, modelProbePreparedSchema, modelProbeResultSchema,
   type ModelProbePrepared } from '@dsh-mobile/protocol'

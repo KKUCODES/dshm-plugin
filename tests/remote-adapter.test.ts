@@ -17,6 +17,7 @@ import { computerEndpointViewSchema, providerModelsViewSchema } from '@dsh-mobil
 import { SettingsProvider, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import Schema from '@deepseek-ai/schemastery'
 import { LlmRuntime } from '@deepseek-ai/dsh-llm'
+import { SubagentServiceState } from '../src/subagent-service-state.js'
 
 const cleanup: Array<() => Promise<unknown> | void> = []
 afterEach(async () => { for (const dispose of cleanup.splice(0).reverse()) await dispose() })
@@ -59,6 +60,102 @@ async function fixture(computerKey?: RemoteServices['computerKey']) {
   return { ctx, adapter, context, services, calls, request, listeners, cancelled: () => cancelled,
     changeGraph: () => { revision = 'changed'; for (const listener of listeners) listener() } }
 }
+
+test('聊天授权可订阅真实服务状态，取消后不保留订阅，错误身份不能订阅', async () => {
+  const f = await fixture(), ctx = new Context()
+  cleanup.push(() => ctx.fiber.dispose())
+  f.services.subagentState = new SubagentServiceState(ctx)
+  expect(await f.request({ method: 'remote.negotiate', version: 2 })).toMatchObject({ type: 'result', value: { subagentState: true } })
+  expect(await f.request({ method: 'remote.subagentStateFollow' }, { ...f.context, hostId: randomUUID() }))
+    .toMatchObject({ type: 'error', code: 'remote_identity_denied' })
+  const frames: HostFrame[] = [], id = randomUUID()
+  const done = f.adapter.receive({ type: 'request', id, operation: { method: 'remote.subagentStateFollow' }, context: f.context }, frame => frames.push(frame))
+  await expect.poll(() => frames.length).toBe(1)
+  expect(frames[0]).toMatchObject({ type: 'event', value: { available: false } })
+  const service = await ctx.plugin({ apply(scope: Context) { scope.provide('subagents', {}) } })
+  await expect.poll(() => frames.length).toBe(2)
+  expect(frames[1]).toMatchObject({ type: 'event', value: { available: true } })
+  await service.dispose(); await expect.poll(() => frames.length).toBe(3)
+  expect(frames[2]).toMatchObject({ type: 'event', value: { available: false } })
+  await f.adapter.receive({ type: 'cancel', id }, frame => frames.push(frame)); await done
+  expect(f.calls).toEqual([])
+})
+
+test('旧Host独立拒绝新版会话投影，协商仍提供旧子会话目录', async () => {
+  const f = await fixture()
+  const negotiation = await f.request({ method: 'remote.negotiate', version: 2 })
+  expect(negotiation).toMatchObject({ type: 'result', value: { endpoints: { calls: expect.arrayContaining(['subagents/list']) } } })
+  if (negotiation?.type !== 'result') throw Error('negotiation_failed')
+  expect((negotiation.value as { endpoints: { calls: string[] } }).endpoints.calls).not.toContain('session/projections')
+  expect(await f.request({ method: 'remote.rpc', endpoint: 'session/projections',
+    payload: { args: { request: { sessionId: 'parent' } } } })).toMatchObject({ type: 'error', code: 'remote_operation_denied' })
+  expect(f.calls).toEqual([])
+})
+
+test('旧Host拒绝持久定时目录，读取不能绕过版本协商或进入原RPC', async () => {
+  const f = await fixture()
+  const negotiation = await f.request({ method: 'remote.negotiate', version: 2 })
+  expect(negotiation).toMatchObject({ type: 'result' })
+  if (negotiation?.type !== 'result') throw Error('negotiation_failed')
+  expect((negotiation.value as { endpoints: { calls: string[] } }).endpoints.calls).not.toContain('schedule/list')
+  expect(await f.request({ method: 'remote.rpc', endpoint: 'schedule/list',
+    payload: { args: { request: { sessionId: 'parent' } } } })).toMatchObject({ type: 'error', code: 'remote_operation_denied' })
+  expect(f.calls).toEqual([])
+})
+
+test('旧Host独立拒绝新版安装回执查询，不公布该入口', async () => {
+  const f = await fixture()
+  const management = { ...f.context, management: true }
+  const negotiated = await f.request({ method: 'remote.negotiate', version: 2 }, management)
+  if (negotiated?.type !== 'result') throw Error('negotiation_failed')
+  expect((negotiated.value as { endpoints: { calls: string[] } }).endpoints.calls).not.toContain('pluginManager/waitForInstall')
+  expect(await f.request({ method: 'remote.rpc', endpoint: 'pluginManager/waitForInstall',
+    payload: { args: { requestId: randomUUID() } } }, management)).toMatchObject({ type: 'error', code: 'remote_operation_denied' })
+  expect(f.calls).toEqual([])
+})
+
+test('旧Host保留原有界文件读取，独立拒绝新版观察和options参数', async () => {
+  const f = await fixture(), args = { workspaceFileScopeId: 's', path: 'a.txt' }
+  expect(await f.request({ method: 'remote.rpc', endpoint: 'workspaceFiles/readBytes',
+    payload: { args: { ...args, range: { offset: 0, length: 1 } } } })).toMatchObject({ type: 'result' })
+  expect(f.calls).toEqual([{ endpoint: 'workspaceFiles/readBytes', payload: { args: { ...args, range: { offset: 0, length: 1 } } } }])
+  expect(await f.request({ method: 'remote.stream', endpoint: 'workspaceFiles/changes', payload: { args } }))
+    .toMatchObject({ type: 'error', code: 'remote_operation_denied' })
+  expect(await f.request({ method: 'remote.rpc', endpoint: 'workspaceFiles/readBytes',
+    payload: { args: { ...args, options: { range: { offset: 0, length: 1 } } } } }))
+    .toMatchObject({ type: 'error', code: 'remote_operation_denied' })
+  expect(f.calls).toHaveLength(1)
+})
+
+test('新版默认预设固定通道仍需管理权限，普通旧版包不开放候选能力', async () => {
+  const f = await fixture()
+  const operation = { method: 'remote.settingsRead' as const, namespace: 'agent-preset-registry' as const }
+  expect(await f.request(operation)).toMatchObject({ type: 'error', code: 'management_required' })
+  expect(await f.request(operation, { ...f.context, management: true })).toMatchObject({ type: 'error', code: 'remote_settings_unavailable' })
+  expect(f.calls).toEqual([])
+})
+
+test('普通旧版包不读取或修改候选代码视图偏好', async () => {
+  const f = await fixture()
+  expect(await f.request({ method: 'remote.codingToolsRead' })).toMatchObject({ type: 'error', code: 'remote_settings_unavailable' })
+  expect(await f.request({ method: 'remote.settingsRead', namespace: 'ui-settings' }, { ...f.context, management: true }))
+    .toMatchObject({ type: 'error', code: 'remote_settings_unavailable' })
+  expect(await f.request({ method: 'remote.negotiate', version: 2 })).toMatchObject({ type: 'result', value: { codingToolsSettings: false } })
+  expect(f.calls).toEqual([])
+})
+
+test('普通旧版包不会开放新版预设复制或删除，即使提供了同名服务', async () => {
+  const f = await fixture()
+  f.services.presetManagement = { read: async () => { throw Error('unexpected_read') }, write: async () => { throw Error('unexpected_write') } }
+  for (const operation of [{ method: 'remote.presetManagementRead' as const, preset: 'standard' },
+    { method: 'remote.presetCopy' as const, snapshot: randomUUID(), id: 'copy', name: 'Copy' },
+    { method: 'remote.presetDelete' as const, snapshot: randomUUID(), confirmed: true as const }]) {
+    expect(await f.request(operation)).toMatchObject({ type: 'error', code: 'management_required' })
+    expect(await f.request(operation, { ...f.context, management: true })).toMatchObject({ type: 'error', code: 'remote_operation_denied' })
+  }
+  expect(await f.request({ method: 'remote.negotiate', version: 2 })).toMatchObject({ type: 'result', value: { presetProfileManagement: false } })
+  expect(f.calls).toEqual([])
+})
 
 test('草稿探测Host入口独立拒绝无管理权限，缺少服务不执行探测', async () => {
   const f = await fixture()
@@ -504,6 +601,8 @@ test('手机预设目录只返回Host解析的位置，拒绝越权、内置及�
   const preset = { id: 'test-copy', trust: 'user' as 'user' | 'system', path }
   const service = { resolve: async () => preset }
   f.services.agentPresets = () => service
+  f.services.profilePresets = () => ({ presets: service, editor: { documentPath: path, entries: () => [] } })
+  expect(await f.request({ method: 'remote.negotiate', version: 2 })).toMatchObject({ type: 'result', value: { presetProfileDirectory: false } })
   expect(await f.request(operation)).toMatchObject({ type: 'error', code: 'management_required' })
   expect(await f.request(operation, { ...f.context, management: true })).toMatchObject({ type: 'result', value: { ok: true, value: { opened: false, path: resolve('artifacts', 'test-copy') } } })
   preset.trust = 'system'

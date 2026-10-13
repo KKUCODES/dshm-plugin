@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { digest } from '../background-output/install-runtime.mjs';
+import { digest } from '../install-files.mjs';
 
 export const output = resolve('artifacts/compatibility/ptc-cancel');
 export const files = {
