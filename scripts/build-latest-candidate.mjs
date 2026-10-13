@@ -25,6 +25,7 @@ await writeFile(resolve(snapshot, 'tsconfig.json'), JSON.stringify({ extends: re
 const types = spawnSync(process.execPath, [resolve(root, 'node_modules/typescript/bin/tsc'), '-p', 'tsconfig.json', '--pretty', 'false'],
   { cwd: snapshot, encoding: 'utf8', windowsHide: true, timeout: 60000, maxBuffer: 4 * 1024 * 1024 });
 await writeFile(resolve(snapshot, 'declarations.log'), types.stdout + types.stderr, { flag: 'wx' });
+if (types.status !== 0) console.error(types.stdout + types.stderr || types.error?.message || 'Declaration compiler exited without diagnostics');
 assert.equal(types.status, 0, 'latest_candidate_declarations_failed');
 const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
 manifest.version = candidateVersion;
