@@ -4,21 +4,23 @@ DSHM 插件装在电脑上的官方 DSH 中。手机用 DSHM 的 Remote 连接�
 
 ## 准备
 
-| 部分 | 当前本地候选 |
+| 部分 | 获取与版本选择 |
 | --- | --- |
-| 电脑 | 官方 DSH `0.2.1-alpha.2`，属于预发布版本。 |
-| 插件 | 新增地址修改的 `dsh-mobile-plugin-0.1.81-latest.0.tgz`，需选择 alpha.2 对应归档。 |
-| 手机 | 与上述版本配套的 DSHM Android 候选。 |
+| 电脑 | 官方 DSH；当前下载包分别面向 `0.2.1-alpha.1` / `0.2.1-alpha.2`，完整核心本地验收使用 alpha.2。 |
+| 插件 | 从 [Actions](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) 下载 `0.1.82-latest.0` 对应版本的 Artifacts，解压后取得 `.tgz`，需要登录 GitHub。 |
+| 手机 | 从 [DSHM Releases](https://github.com/KKUCODES/deepseek-harness-mobile/releases) 下载已签名 Android 开发预览；使用前核对配套 DSH 与插件版本。 |
 | 中转 | 手机和电脑都能访问的 DSH Mobile 中转服务。 |
 
-当前候选尚未正式发布，没有公开下载入口。以下步骤适用于已经取得本地候选归档和配套 App 的使用者；新归档位置与验证见[地址修改记录](../compatibility/latest-upstream/gateway-settings.md)，此前完整 Remote 的安装证据见[本地安装记录](../compatibility/latest-upstream/official-installation.md)。当前手机包与电脑 DSH 版本必须完全一致，不要直接换成任意更新版本。地址修改候选也有 alpha.1 归档，仅用于匹配该版本的官方 DSH，不沿用 alpha.2 的完整手机验收结论。
+插件 Release 当前仍是未发布草稿，普通用户通过 Actions 获取构建包；下载方式和保留期限见[插件下载说明](./releases.md)。`0.1.82` 已核验打包、文件与摘要，没有把它计作全量手机兼容验收。核心 Remote 的完整本地证据对应 `0.1.80-latest.0`＋官方 DSH `0.2.1-alpha.2`＋原配套 Android；`0.1.81-latest.0` 的[地址修改专项](../compatibility/latest-upstream/gateway-settings.md)另行记录。具体范围见[当前支持清单](../compatibility/latest-upstream/official-support.md)，历史归档安装见[本地安装记录](../compatibility/latest-upstream/official-installation.md)。
+
+包名中的 DSH 版本必须与电脑一致，不要混装或直接换成任意更新版本。alpha.1 构建包不沿用 alpha.2 的完整手机验收结论。取得下面示例包仅说明可以开始安装和联调，不代表该下载组合已经完成上述所有验收。
 
 ## 1. 安装插件
 
 在官方 DSH 的项目目录执行，将示例路径换成插件归档的实际位置：
 
 ```powershell
-pnpm dsh plugin --profile web add 'C:\Downloads\dsh-mobile-plugin-0.1.81-latest.0.tgz'
+pnpm dsh plugin --profile web add 'C:\Downloads\dshm-plugin-0.1.82-latest.0-dsh-0.2.1-alpha.2.tgz'
 pnpm dsh web
 ```
 
