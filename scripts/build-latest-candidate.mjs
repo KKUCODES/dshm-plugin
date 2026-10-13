@@ -10,10 +10,10 @@ const runtime = resolve(root, 'artifacts/latest-runtime-check');
 const version = '0.2.1-alpha.1';
 
 /** 从同一份隔离源码生成运行入口和声明；审查包不覆盖持久联调目录。 */
-export async function buildLatestCandidate(relativeTarget = 'candidate', { targetVersion = version, candidateVersion = '0.1.77-latest.0' } = {}) {
+export async function buildLatestCandidate(relativeTarget = 'candidate', { targetVersion = version, candidateVersion = '0.1.77-latest.0', sdkRoot } = {}) {
 assert.ok(['0.2.1-alpha.1', '0.2.1-alpha.2'].includes(targetVersion));
 assert.match(candidateVersion, /^0\.1\.\d+-latest\.0$/);
-const runtime = resolve(root, 'artifacts', targetVersion === '0.2.1-alpha.2' ? 'official-alpha2-sdk' : 'latest-runtime-check');
+const runtime = sdkRoot ?? resolve(root, 'artifacts', targetVersion === '0.2.1-alpha.2' ? 'official-alpha2-sdk' : 'latest-runtime-check');
 const version = targetVersion;
 assert.match(relativeTarget, /^candidate(?:-package-check-[A-Za-z0-9]+\/package)?$/);
 const target = resolve(runtime, relativeTarget);

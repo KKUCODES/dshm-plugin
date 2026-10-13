@@ -27,6 +27,8 @@
 
 ## 开始使用
 
+[插件构建与下载](./docs/releases.md) · [GitHub Actions](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) · [发行版本](https://github.com/KKUCODES/dshm-plugin/releases)
+
 1. 安装匹配 DSH 版本的插件，运行 `pnpm dsh web`；提示下次启动加载时，重启 DSH。
 2. 填写中转根地址、电脑名称，注册电脑并开启连接。
 3. 手机领取配对链接，电脑核对指纹并批准。
@@ -57,7 +59,7 @@
 
 ## 开发与文档
 
-TypeScript + Cordis，React 配置页。依赖相邻后端协议与固定 SDK，单独克隆尚不能一键构建；默认构建仍是旧基线，当前候选入口见开发指南。
+TypeScript + Cordis，React 配置页。GitHub Actions 自动准备固定后端协议与已发布 SDK，分别打包两个 DSH 版本；默认本地构建仍是旧基线，见[自动构建说明](./docs/releases.md)与开发指南。
 
 ```text
 src/              电脑插件、会话适配与配置页
@@ -69,5 +71,6 @@ compatibility/    版本支持与兼容验证资料
 
 - [安装与使用](./docs/usage.md)：连接、批准与撤销。
 - [开发指南](./docs/development.md)：依赖、构建与版本。
+- [下载与发版](./docs/releases.md)：Actions 插件包与发行草稿。
 - [支持清单](./compatibility/latest-upstream/official-support.md)：已验与未验范围。
 - [知识库](./docs/project-knowledge/catalog.md)：架构、接口与验证资料。

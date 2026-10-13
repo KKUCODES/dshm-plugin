@@ -1,0 +1,115 @@
+name: Build plugin packages
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths: ['src/**', 'scripts/**', 'ci/**', 'package*.json', 'tsconfig*.json', 'cordis.patch.yml', '.github/workflows/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_draft:
+        description: 'Create an unpublished prerelease draft'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: plugin-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        dsh: ['0.2.1-alpha.1', '0.2.1-alpha.2']
+    env:
+      DSHM_DSH_VERSION: ${{ matrix.dsh }}
+    defaults:
+      run:
+        working-directory: plugin
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: plugin
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            plugin/package-lock.json
+            plugin/ci/sdk/*/package-lock.json
+      - id: config
+        run: node scripts/ci-version.mjs
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: KKUCODES/dshm-relay
+          ref: ${{ steps.config.outputs.backend_ref }}
+          path: backend
+          persist-credentials: false
+      - name: Build shared protocol
+        working-directory: backend
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build --workspace @dsh-mobile/protocol
+      - name: Prepare pinned SDK and build packages
+        run: |
+          npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund
+          npm run prepare:ci
+          npm run build:ci
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dshm-plugin-${{ matrix.dsh }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            plugin/artifacts/ci/packages/dshm-plugin-*.tgz
+            plugin/artifacts/ci/packages/*.sha256
+            plugin/artifacts/ci/packages/compatibility-*.json
+
+  release:
+    needs: build
+    if: github.repository == 'KKUCODES/dshm-plugin' && (github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.release_draft))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: dshm-plugin-*
+          merge-multiple: true
+          path: release-files
+      - name: Create release draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version=$(node -p "require('./ci/release.json').version")
+          cat > release-files/RELEASE-NOTES.md <<'NOTES'
+          DSHM plugin development candidate. Choose the archive matching your official DSH version exactly.
+
+          - DSH 0.2.1-alpha.1 and 0.2.1-alpha.2 have separate packages.
+          - Install through the official DSH plugin command; no core patches are included.
+          - CI packaging is verified separately from real Android and full compatibility validation.
+          - SHA-256 and compatibility metadata are included.
+          NOTES
+          tag="v$version"
+          if gh release view "$tag" --json isDraft > release-state.json 2>/dev/null; then
+            node -e 'if (!require("./release-state.json").isDraft) throw Error("Published releases cannot be overwritten")'
+            target=$(gh api "repos/$GH_REPO/git/ref/tags/$tag" --jq '.object.sha')
+            test "$target" = "$GITHUB_SHA"
+            gh release upload "$tag" release-files/*.tgz release-files/*.sha256 release-files/*.json --clobber
+          else
+            gh release create "$tag" release-files/*.tgz release-files/*.sha256 release-files/*.json --target "$GITHUB_SHA" --draft --prerelease --title "DSHM Plugin $version" --notes-file release-files/RELEASE-NOTES.md
+          fi

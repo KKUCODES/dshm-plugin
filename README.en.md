@@ -27,6 +27,8 @@ A plugin for official DSH that connects computer conversations to the DSHM phone
 
 ## Get started
 
+[Plugin builds and downloads (Chinese)](./docs/releases.md) · [GitHub Actions](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) · [Releases](https://github.com/KKUCODES/dshm-plugin/releases)
+
 1. Install a plugin build matching your DSH version and run `pnpm dsh web`. Restart DSH if it says the plugin will load on the next start.
 2. Enter the relay's root URL and computer name, register the computer, and enable the connection.
 3. Claim the pairing link on your phone, then verify its fingerprint and approve it on the computer.
@@ -57,7 +59,7 @@ The phone does not create computer workspaces, accept manually entered commands,
 
 ## Development and documentation
 
-TypeScript + Cordis, with a React settings page. Builds require the adjacent backend protocol package and a pinned SDK; cloning this repository alone is not enough for a one-command build. The default build still targets the older baseline. Use the development guide for the current candidate build entry point.
+TypeScript + Cordis, with a React settings page. GitHub Actions prepares the pinned backend protocol and published SDK packages, building separate archives for the two DSH versions. The default local build still targets the older baseline. See the [automated build guide (Chinese)](./docs/releases.md) and development guide.
 
 ```text
 src/              Computer plugin, conversation adapter, and settings page
@@ -71,5 +73,6 @@ Detailed guides are currently in Chinese:
 
 - [Installation and usage](./docs/usage.md): connection, approval, and revocation.
 - [Development guide](./docs/development.md): dependencies, builds, and versions.
+- [Downloads and releases](./docs/releases.md): Actions packages and release drafts.
 - [Support matrix](./compatibility/latest-upstream/official-support.md): validated and unvalidated scope.
 - [Knowledge catalog](./docs/project-knowledge/catalog.md): architecture, interfaces, and validation evidence.

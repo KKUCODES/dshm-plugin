@@ -1,5 +1,7 @@
 # 插件知识总目录
 
+自动构建与下载：[两个 DSH 版本的独立包、固定 SDK 和发行草稿](../releases.md)。原本地与历史候选入口保持，CI 归档不代替真实 DSH 与 Android 兼容验收。
+
 公开阅读入口：[项目首页](../../README.md)、[English](../../README.en.md)、[安装与使用](../usage.md)、[开发指南](../development.md)、[README 图片来源](../images/README.md)。首页只介绍产品和使用入口，构建与版本细节从独立指南进入；下方保留各阶段的技术依据。
 
 公开仓库：[手机端](https://github.com/KKUCODES/dshm) · [电脑插件](https://github.com/KKUCODES/dshm-plugin) · [中转服务](https://github.com/KKUCODES/dshm-relay)。首页和公开使用、开发指南按独立仓库链接；本总目录的历史资料仍按本地项目集合组织。
