@@ -105,10 +105,14 @@ jobs:
           - SHA-256 and compatibility metadata are included.
           NOTES
           tag="v$version"
-          if gh release view "$tag" --json isDraft > release-state.json 2>/dev/null; then
-            node -e 'if (!require("./release-state.json").isDraft) throw Error("Published releases cannot be overwritten")'
-            target=$(gh api "repos/$GH_REPO/git/ref/tags/$tag" --jq '.object.sha')
-            test "$target" = "$GITHUB_SHA"
+          if gh release view "$tag" --json isDraft,targetCommitish > release-state.json 2>/dev/null; then
+            node -e 'const r=require("./release-state.json"); if (!r.isDraft || r.targetCommitish !== process.env.GITHUB_SHA) throw Error("Only a draft for the same commit can be updated")'
+            # 未发布草稿可能尚未创建 Git 标签；已有标签按 commit 解析，兼容 annotated tag。
+            gh api "repos/$GH_REPO/git/matching-refs/tags/$tag" > tag-refs.json
+            if node -e 'const refs=require("./tag-refs.json"); process.exit(refs.some(r=>r.ref === "refs/tags/"+process.argv[1]) ? 0 : 1)' "$tag"; then
+              target=$(gh api "repos/$GH_REPO/commits/$tag" --jq '.sha')
+              test "$target" = "$GITHUB_SHA"
+            fi
             gh release upload "$tag" release-files/*.tgz release-files/*.sha256 release-files/*.json --clobber
           else
             gh release create "$tag" release-files/*.tgz release-files/*.sha256 release-files/*.json --target "$GITHUB_SHA" --draft --prerelease --title "DSHM Plugin $version" --notes-file release-files/RELEASE-NOTES.md
