@@ -31,7 +31,7 @@ const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'
 manifest.version = candidateVersion;
 delete manifest.devDependencies;
 delete manifest.scripts;
-for (const name of ['@deepseek-ai/dsh-config-editor', '@deepseek-ai/dsh-app-boot', '@deepseek-ai/dsh-atomic-write', '@deepseek-ai/dsh-session']) manifest.peerDependencies[name] = version;
+for (const name of ['@deepseek-ai/dsh-config-editor', '@deepseek-ai/dsh-app-boot', '@deepseek-ai/dsh-atomic-write', '@deepseek-ai/dsh-session', '@deepseek-ai/dsh-fs']) manifest.peerDependencies[name] = version;
 for (const name of Object.keys(manifest.peerDependencies)) {
   const peer = JSON.parse(await readFile(resolve(runtime, 'node_modules', name, 'package.json'), 'utf8'));
   if (name.startsWith('@deepseek-ai/dsh-') && peer.version !== version) throw Error(`Unexpected candidate peer version: ${name}`);
