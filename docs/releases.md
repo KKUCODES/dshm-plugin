@@ -24,3 +24,7 @@ GitHub 托管的 Ubuntu 24.04 + Node.js 24。后端协议从固定提交取得�
 本地已有环境与历史候选入口保持。新的 CI 入口为 `npm run prepare:ci` 和 `npm run build:ci`，分别准备隔离 SDK 和生成归档；工作流还会先准备相邻 `backend/`。产物位于被忽略的 `artifacts/ci/`，SDK 配置与锁文件位于 `ci/sdk/`。
 
 维护来源：[工作流](../.github/workflows/plugin-build.yml)、[SDK 准备](../scripts/prepare-ci.mjs)、[打包入口](../scripts/build-ci-package.mjs)。
+
+## 已核验范围
+
+2026-10-13 的[实际云端构建](https://github.com/KKUCODES/dshm-plugin/actions/runs/38369260384)已生成两个 `0.1.82-latest.0` 归档。下载后核对各自 DSH 依赖版本、63 个归档文件与 SHA-256。此记录只证明干净环境可打包，不代表该新包已安装或完成全部 Remote 功能复验。
