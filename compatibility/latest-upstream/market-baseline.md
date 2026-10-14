@@ -1,6 +1,6 @@
 # 插件市场基线与 alpha.2 双版本兼容
 
-- 状态：以下核心场景本地通过；云端构建结果以 GitHub Actions 为准，新版 Release 尚未发布。
+- 状态：以下核心场景本地通过；[插件公开 Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.84-latest.0)与[新版 APK](https://github.com/KKUCODES/deepseek-harness-mobile/releases/tag/v0.1.0-preview.2)已发布，云端构建和匿名下载校验通过。
 - 维护角色：DSHM 插件与手机端维护者；核验日期：2026-10-14。
 - 来源：[版本白名单](../../src/profile-dsh-version.ts)、[共同安装包构建](../../scripts/build-github-package.mjs)、[实际安装验证器](../../scripts/verify-github-install.mjs)、[真实 Remote 验证器](../../scripts/verify-remote-baseline.mjs)、[Android 驱动](../../../dsh-mobile/tests/support/market-baseline-android.mjs)。
 
@@ -44,7 +44,7 @@ Android 使用已存在的独立 MuMu 设备 3、`127.0.0.1:16480`，本轮新�
 
 旧版 DSHM 的 JS 聊天传输与 Kotlin 原生通知连接都只接受 SDK 完全相同的宿主。仅升级电脑插件无法让旧 APK 连接 rc.2。
 
-本次两个入口均显式允许 alpha.2 SDK 连接 rc.2 / alpha.2，并为 rc.2 选择已核验的文件和 profile 契约；旧 SDK 仍保持原版本边界。手机候选版本准备为 `0.1.0-preview.2`、versionCode 4。公开下载的 preview.1 仍仅连接 alpha.2，需等包含此更新的 APK 发布；不覆盖既有 Release。
+本次两个入口均显式允许 alpha.2 SDK 连接 rc.2 / alpha.2，并为 rc.2 选择已核验的文件和 profile 契约；旧 SDK 仍保持原版本边界。手机 `0.1.0-preview.2`、versionCode 4 已公开发布，保留原签名。旧 preview.1 仍仅连接 alpha.2，连接 rc.2 需安装新版 APK；既有 Release 保持不变。
 
 ## 重复验证与边界
 
@@ -52,7 +52,7 @@ Android 使用已存在的独立 MuMu 设备 3、`127.0.0.1:16480`，本轮新�
 
 可选真实协议检查需要先构建相邻后端，设置 `DSHM_REMOTE_PROBE=1`。真实模型额外通过 `DSHM_TEST_CREDENTIALS_FILE` 明确指定已有专用测试凭据；脚本只取 `refs.DEEPSEEK_API_KEY`，不复制原浏览器或电脑身份，不输出凭据。Android 专项还需独立 `.baselinetest` 包、`DSHM_ANDROID_PROBE=1`、`DSHM_ANDROID_SERIAL=127.0.0.1:16480` 与实际 ADB 路径，不能在用户正式 UID 清数据。
 
-工作流已增加 rc.2 构建及 rc.2/alpha.2 的真实官方 CLI 安装/Web检查；云端运行结果以实际 Actions 为准。市场需要重新扫描包含此更新的提交；本地通过不等于市场标签已经变化。
+工作流已增加 rc.2 构建及 rc.2/alpha.2 的真实官方 CLI 安装/Web检查；[版本发布 Actions](https://github.com/KKUCODES/dshm-plugin/actions/runs/38529805413)全部成功。公开九个插件附件均匿名 GET 200，摘要与发行元数据和校验文件一致；三份归档分别核对精确宿主 peer。手机[版本发布 Actions](https://github.com/KKUCODES/deepseek-harness-mobile/actions/runs/38529805782)完成构建、签名与公开发行，APK及三个校验附件匿名下载与身份/证书/版本检查通过。市场需要重新扫描包含此更新的提交；公开发行不等于市场标签已经变化。
 
 另已只读核对市场的 [compatibility.ts](https://github.com/0326/dsh-plugin-market/blob/main/src/worker/scanner/compatibility.ts) 和 [semver.ts](https://github.com/0326/dsh-plugin-market/blob/main/src/worker/scanner/semver.ts)，用其原函数离线检查当前 package.json 与 rc.2 / Cordis 4.0.4 基线，实际结果为 `COMPATIBLE`。[本机判断记录](../../artifacts/github-install/market-compatibility.json)含两份源码摘要；这不等于已更改线上扫描结果。
 

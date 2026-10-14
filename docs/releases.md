@@ -6,11 +6,13 @@
 
 官方 DSH `0.2.0-rc.2` / `0.2.1-alpha.2` 可共用 GitHub 默认安装包，运行 `dsh plugin --profile web add github:KKUCODES/dshm-plugin`，无需下载归档或在用户电脑上编译。[GitHub 安装与固定提交](./github-install.md)说明当前版本、源码启动前缀和市场投稿方式。
 
-打开 [Build plugin packages](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml)，选择成功的构建，在 Artifacts 下载与电脑 DSH 版本一致的包。Actions 产物下载需要登录 GitHub，保留 30 天。
+从 [0.1.84 公开 Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.84-latest.0) 下载与电脑 DSH 版本一致的 `.tgz`，无需登录 GitHub。首页提供三版[直接下载链接](../README.md#安装插件并配对手机)。
+
+开发构建也可从 [Build plugin packages](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) 的成功构建中下载 Artifacts；此入口需要登录 GitHub，产物保留 30 天。
 
 每轮分别生成官方 DSH `0.2.0-rc.2`、`0.2.1-alpha.1` 和 `0.2.1-alpha.2` 的 `.tgz`、SHA-256 与兼容元数据；这些归档的 peer 精确固定，不能混装。构建通过不代表所有手机、模型和插件已兼容。
 
-公开发行包从 [Releases](https://github.com/KKUCODES/dshm-plugin/releases) 下载。工作流只创建未发布草稿，维护者检查后再发布；草稿不对普通用户开放。
+工作流创建未发布草稿，维护者检查后再公开发布；草稿不对普通用户开放。`0.1.84-latest.0` 已完成此流程，三个插件包、校验文件与兼容信息均可公开下载。
 
 ## 运行与发版
 
@@ -30,6 +32,6 @@ GitHub 托管的 Ubuntu 24.04 + Node.js 24。后端协议从固定提交取得�
 
 ## 已核验范围
 
-`0.1.84-latest.0` 的三版归档、共同 Git 包两套 SDK 编译、官方安装/Web/卸载和真实核心协议通过本地验证。[双版本记录](../compatibility/latest-upstream/market-baseline.md)。工作流已新增 rc.2 和两版实际安装启动检查；未运行的云端结果不能由本地通过推定。
+`0.1.84-latest.0` 的三版归档、共同 Git 包两套 SDK 编译、官方安装/Web/卸载和真实核心协议通过本地验证。[双版本记录](../compatibility/latest-upstream/market-baseline.md)。[版本发布 Actions](https://github.com/KKUCODES/dshm-plugin/actions/runs/38529805413)三版构建、产物一致性与 rc.2 / alpha.2 实际安装启动检查通过；公开发行的九个附件均已匿名 GET 200 并核对 SHA-256。
 
 2026-10-13 的[实际云端构建](https://github.com/KKUCODES/dshm-plugin/actions/runs/38369260384)已生成两个 `0.1.82-latest.0` 归档。下载后核对各自 DSH 依赖版本、63 个归档文件与 SHA-256。此记录只证明干净环境可打包，不代表该新包已安装或完成全部 Remote 功能复验。

@@ -13,7 +13,7 @@ DSHM 插件装在电脑上的官方 DSH 中。手机用 DSHM 的 Remote 连接�
 
 连接 rc.2 需要包含本次兼容更新的手机端；公开 `0.1.0-preview.1` APK 仍仅连接 alpha.2。[当前双版本范围与配套要求](../compatibility/latest-upstream/market-baseline.md)。
 
-插件 Release 当前仍是未发布草稿。GitHub 安装不需要下载 Actions 产物或登录 GitHub，安装细节见 [GitHub 安装说明](./github-install.md)；归档下载与保留期限见[插件下载说明](./releases.md)。新版本的安装或打包不计作全量手机兼容验收。核心 Remote 的完整本地证据对应 `0.1.80-latest.0`＋官方 DSH `0.2.1-alpha.2`＋原配套 Android；`0.1.81-latest.0` 的[地址修改专项](../compatibility/latest-upstream/gateway-settings.md)另行记录。具体范围见[当前支持清单](../compatibility/latest-upstream/official-support.md)，历史归档安装见[本地安装记录](../compatibility/latest-upstream/official-installation.md)。
+插件 `0.1.84-latest.0` 已[公开发布](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.84-latest.0)，三版归档可直接下载，无需登录 GitHub。GitHub 安装也不需要下载 Actions 产物或登录 GitHub，安装细节见 [GitHub 安装说明](./github-install.md)；归档下载与开发产物保留期限见[插件下载说明](./releases.md)。新版本的安装或打包不计作全量手机兼容验收。核心 Remote 的完整本地证据对应 `0.1.80-latest.0`＋官方 DSH `0.2.1-alpha.2`＋原配套 Android；`0.1.81-latest.0` 的[地址修改专项](../compatibility/latest-upstream/gateway-settings.md)另行记录。具体范围见[当前支持清单](../compatibility/latest-upstream/official-support.md)，历史归档安装见[本地安装记录](../compatibility/latest-upstream/official-installation.md)。
 
 包名中的 DSH 版本必须与电脑一致，不要混装或直接换成任意更新版本。alpha.1 构建包不沿用 alpha.2 的完整手机验收结论。取得下面示例包仅说明可以开始安装和联调，不代表该下载组合已经完成上述所有验收。
 
