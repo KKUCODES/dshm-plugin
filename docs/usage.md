@@ -7,20 +7,27 @@ DSHM 插件装在电脑上的官方 DSH 中。手机用 DSHM 的 Remote 连接�
 | 部分 | 获取与版本选择 |
 | --- | --- |
 | 电脑 | 官方 DSH；当前下载包分别面向 `0.2.1-alpha.1` / `0.2.1-alpha.2`，完整核心本地验收使用 alpha.2。 |
-| 插件 | 从 [Actions](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) 下载 `0.1.82-latest.0` 对应版本的 Artifacts，解压后取得 `.tgz`，需要登录 GitHub。 |
+| 插件 | alpha.2 可直接从 GitHub 安装 `0.1.83-latest.0`；其他已支持版本从 [Actions](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml)下载匹配归档，解压取得 `.tgz`，需要登录 GitHub。 |
 | 手机 | 从 [DSHM Releases](https://github.com/KKUCODES/deepseek-harness-mobile/releases) 下载已签名 Android 开发预览；使用前核对配套 DSH 与插件版本。 |
 | 中转 | 手机和电脑都能访问的 DSH Mobile 中转服务。 |
 
-插件 Release 当前仍是未发布草稿，普通用户通过 Actions 获取构建包；下载方式和保留期限见[插件下载说明](./releases.md)。`0.1.82` 已核验打包、文件与摘要，没有把它计作全量手机兼容验收。核心 Remote 的完整本地证据对应 `0.1.80-latest.0`＋官方 DSH `0.2.1-alpha.2`＋原配套 Android；`0.1.81-latest.0` 的[地址修改专项](../compatibility/latest-upstream/gateway-settings.md)另行记录。具体范围见[当前支持清单](../compatibility/latest-upstream/official-support.md)，历史归档安装见[本地安装记录](../compatibility/latest-upstream/official-installation.md)。
+插件 Release 当前仍是未发布草稿。GitHub 安装不需要下载 Actions 产物或登录 GitHub，安装细节见 [GitHub 安装说明](./github-install.md)；归档下载与保留期限见[插件下载说明](./releases.md)。新版本的安装或打包不计作全量手机兼容验收。核心 Remote 的完整本地证据对应 `0.1.80-latest.0`＋官方 DSH `0.2.1-alpha.2`＋原配套 Android；`0.1.81-latest.0` 的[地址修改专项](../compatibility/latest-upstream/gateway-settings.md)另行记录。具体范围见[当前支持清单](../compatibility/latest-upstream/official-support.md)，历史归档安装见[本地安装记录](../compatibility/latest-upstream/official-installation.md)。
 
 包名中的 DSH 版本必须与电脑一致，不要混装或直接换成任意更新版本。alpha.1 构建包不沿用 alpha.2 的完整手机验收结论。取得下面示例包仅说明可以开始安装和联调，不代表该下载组合已经完成上述所有验收。
 
 ## 1. 安装插件
 
-在官方 DSH 的项目目录执行，将示例路径换成插件归档的实际位置：
+官方 DSH alpha.2 可以直接使用它原有的命令：
+
+```sh
+dsh plugin --profile web add github:KKUCODES/dshm-plugin
+dsh web
+```
+
+如果你在 DSH 源码目录运行 `pnpm dsh web`，安装命令也加上 `pnpm` 前缀。正式使用优先复制市场给出的固定提交命令。alpha.1 必须下载其对应归档；例如取得匹配 alpha.2 的 `.tgz` 后，也可从 DSH 项目目录执行：
 
 ```powershell
-pnpm dsh plugin --profile web add 'C:\Downloads\dshm-plugin-0.1.82-latest.0-dsh-0.2.1-alpha.2.tgz'
+pnpm dsh plugin --profile web add 'C:\Downloads\dshm-plugin-0.1.83-latest.0-dsh-0.2.1-alpha.2.tgz'
 pnpm dsh web
 ```
 

@@ -7,7 +7,8 @@ import { buildLatestCandidate } from './build-latest-candidate.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const version = process.env.DSHM_DSH_VERSION ?? '0.2.1-alpha.2';
-const candidateVersion = process.env.DSHM_PLUGIN_VERSION ?? '0.1.82-latest.0';
+const release = JSON.parse(await readFile(resolve(root, 'ci/release.json'), 'utf8'));
+const candidateVersion = process.env.DSHM_PLUGIN_VERSION ?? release.version;
 assert.ok(['0.2.1-alpha.1', '0.2.1-alpha.2'].includes(version));
 assert.match(candidateVersion, /^0\.1\.\d+-latest\.0$/);
 assert.ok(process.env.npm_execpath, 'Run through npm run build:ci');

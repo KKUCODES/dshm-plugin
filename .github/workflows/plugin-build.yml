@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-    paths: ['src/**', 'scripts/**', 'ci/**', 'package*.json', 'tsconfig*.json', 'cordis.patch.yml', '.github/workflows/**']
+    paths: ['src/**', 'lib/**', 'scripts/**', 'tests/github-package.test.mjs', 'ci/**', 'package*.json', 'tsconfig*.json', 'cordis.patch.yml', '.github/workflows/**']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -64,6 +64,11 @@ jobs:
           npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund
           npm run prepare:ci
           npm run build:ci
+      - name: Verify committed GitHub install package
+        if: matrix.dsh == '0.2.1-alpha.2'
+        run: |
+          npm run test:github
+          npm run build:github -- --check
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dshm-plugin-${{ matrix.dsh }}

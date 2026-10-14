@@ -12,7 +12,8 @@ export class FeedbackNotifications {
     })
     ctx.on('feedback/committed', inspection => {
       const event = inspection.events.at(-1)
-      if (event?.type !== 'feedback/message-put' && event?.type !== 'feedback/message-delete') return
+      // alpha.1 的 inspection 类型尚未列出反馈事件；按事件名核对，兼容两版声明。
+      if (!['feedback/message-put', 'feedback/message-delete'].includes(event?.type ?? '')) return
       this.changed(inspection.meta.id)
     })
     ctx.effect(() => () => { this.lifetime.abort(); this.listeners.clear() }, 'dsh-mobile: feedback notifications')

@@ -31,6 +31,14 @@ const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'
 manifest.version = candidateVersion;
 delete manifest.devDependencies;
 delete manifest.scripts;
+manifest.main = './dist/index.js';
+manifest.types = './dist/index.d.ts';
+for (const entry of Object.values(manifest.exports)) {
+  if (typeof entry !== 'object' || entry === null) continue;
+  for (const [condition, path] of Object.entries(entry)) {
+    if (typeof path === 'string') entry[condition] = path.replace(/^\.\/lib\//, './dist/');
+  }
+}
 for (const name of ['@deepseek-ai/dsh-config-editor', '@deepseek-ai/dsh-app-boot', '@deepseek-ai/dsh-atomic-write', '@deepseek-ai/dsh-session', '@deepseek-ai/dsh-fs']) manifest.peerDependencies[name] = version;
 for (const name of Object.keys(manifest.peerDependencies)) {
   const peer = JSON.parse(await readFile(resolve(runtime, 'node_modules', name, 'package.json'), 'utf8'));

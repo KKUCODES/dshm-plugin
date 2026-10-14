@@ -10,6 +10,7 @@
 
 ```text
 src/                  Host 入口、会话适配、各项能力与 client/ 配置页
+lib/                  随源码提交的 alpha.2 GitHub 安装产物
 tests/                单元测试、回归和夹具
 scripts/              候选构建、接口与交付审查
 docs/                 使用指南、开发说明、知识库与首页图片
@@ -22,13 +23,16 @@ artifacts/            本地产物与验收证据，不提交 Git
 - Cordis 与 DSH 包是宿主接口。当前新版候选使用单独准备的固定版本 SDK；不能混用旧版依赖或任意未来版本。
 - `src/client/` 是电脑上的插件配置页，不是手机客户端。客户端聊天布局、原生能力和 Remote 页面属于 [DeepSeek Harness Mobile（DSHM）](https://github.com/KKUCODES/deepseek-harness-mobile)。
 
-当前目录仍采用多仓库相邻布局，单独克隆本仓库不能一键生成当前候选。相邻项目和隔离 SDK 尚未收敛成独立公开构建流程。
+维护者本地仍采用相邻后端布局；GitHub 用户只安装预编译产物，无需该目录。CI 从固定提交准备后端协议与固定 SDK，已支持干净环境构建；本地复用相同命令需要先准备这些输入，步骤见[自动构建说明](./releases.md)。
 
 ## 先区分两套构建
 
 | 入口 | 用途与边界 |
 | --- | --- |
-| 根目录 `package.json` | 插件版本 `0.1.75`，DSH `0.1.6-alpha.2` 旧版开发基线。普通 `build` / `pack:local` 不生成当前 alpha.2 候选。 |
+| 根目录 `package.json` 的运行入口 | 版本 `0.1.83-latest.0`，`main` / `exports` 指向提交的 `lib/`，精确匹配 DSH `0.2.1-alpha.2`。不运行 Git 安装生命周期脚本。 |
+| 根目录开发依赖、`build` / `typecheck` / `test` | 保留 DSH `0.1.6-alpha.2` 旧版源代码回归环境，只生成忽略的 `dist/`。开发依赖与新的运行 peer 版本不同，安装维护依赖时使用 `--legacy-peer-deps`；发布构建仍使用单独固定的 SDK。 |
+| `build:github` / `check:github` | 构建或检查当前 GitHub 安装 `lib/`；源码摘要与逐文件摘要随产物记录，CI 重新构建比较。 |
+| `prepare:ci` / `build:ci` | 按 `ci/release.json` 版本与所选固定 SDK 生成 alpha.1/alpha.2 独立 `.tgz`，不覆盖 `lib/`。 |
 | `scripts/build-official-plugin-only.mjs` | 当前官方 DSH `0.2.1-alpha.2` 的纯插件候选入口，生成 `0.1.80-latest.0`。依赖已准备的隔离 SDK，使用固定产物目录。 |
 | `scripts/build-official-gateway-settings.mjs` | 地址修改候选 `0.1.81-latest.0`。默认针对官方 `0.2.1-alpha.2`，传入 `--alpha1` 针对 `0.2.1-alpha.1`；两个归档的宿主版本精确固定，不能混装。 |
 
@@ -58,13 +62,15 @@ npm run build
 再从本插件目录执行：
 
 ```powershell
-npm ci --ignore-scripts
+npm ci --ignore-scripts --legacy-peer-deps
 npm run typecheck
 npm run build
 npm test
 ```
 
-需要旧版归档时，确保 `artifacts/` 目录存在后执行：
+普通 `build` 的 `dist/` 不再是发布入口。要生成 GitHub 安装产物，先准备官方 alpha.2 SDK 和已编译共享协议，执行 `npm run build:github`；需逐文件核对时执行 `npm run build:github -- --check`。
+
+需要当前 alpha.2 的根目录预编译归档时，确保 `lib/` 已通过检查，并执行：
 
 ```powershell
 npm run pack:local
@@ -82,7 +88,7 @@ npm run pack:local
 
 ## Git 仓库边界
 
-本目录是独立 Git 仓库，手机端、后端和上游参考不包含在这个仓库内。源码与可复用文档纳入版本管理，`node_modules/`、`dist/`、`artifacts/`、环境配置及 `.tgz` 产物由 `.gitignore` 排除。
+本目录是独立 Git 仓库，手机端、后端和上游参考不包含在这个仓库内。源码、可复用文档与正式 GitHub 安装 `lib/` 纳入版本管理；`node_modules/`、旧开发 `dist/`、`artifacts/`、环境配置及 `.tgz` 产物由 `.gitignore` 排除。
 
 不要把真实 Key、电脑凭据、配对链接、个人会话或本机验收产物提交到公开仓库。首页插画和软件截图的来源记录在[图片说明](./images/README.md)中。
 

@@ -6,7 +6,7 @@
 
 **DSHM Plugin** runs inside official [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) on your computer, synchronizing workspaces, chat sessions, execution results, and approvals with the [DSHM Android client](https://github.com/KKUCODES/deepseek-harness-mobile/blob/main/README.en.md). Continue conversations and make decisions remotely while the computer executes tasks. No DSH core modifications or rebuilds are required.
 
-[Download plugin packages (GitHub sign-in required)](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) · [Install and pair your phone](#install-the-plugin-and-pair-your-phone) · [DSH compatibility (Chinese)](./compatibility/latest-upstream/official-support.md) · [FAQ](#faq)
+[Install from GitHub](#install-the-plugin-and-pair-your-phone) · [Download plugin packages (GitHub sign-in required)](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) · [DSH compatibility (Chinese)](./compatibility/latest-upstream/official-support.md) · [FAQ](#faq)
 
 <p align="center">
   <img src="./docs/images/logo.png" width="128" height="128" alt="DSHM logo: the DeepSeek whale with a two-way phone and computer connection">
@@ -31,7 +31,15 @@
 
 [Plugin builds and downloads (Chinese)](./docs/releases.md) · [GitHub Actions](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) · [Releases](https://github.com/KKUCODES/dshm-plugin/releases)
 
-Actions currently provides `0.1.82-latest.0` builds for DSH `0.2.1-alpha.1` and `0.2.1-alpha.2` separately. Sign in to GitHub, choose a successful build, download its matching Artifacts, and extract the `.tgz`. The Release remains an unpublished draft. Check the [version and validation scope](#current-status) below before installing; follow the [installation guide (Chinese)](./docs/usage.md) for full steps.
+**For official DSH `0.2.1-alpha.2`, install directly from GitHub:**
+
+```sh
+dsh plugin --profile web add github:KKUCODES/dshm-plugin
+```
+
+`dsh plugin` is the official DSH command. From a DSH source checkout, use `pnpm dsh plugin --profile web add github:KKUCODES/dshm-plugin`. Compiled files are included: installation requires no compiler, adjacent backend checkout, or build-script approval. Prefer the market's command pinned with `#<full-commit-sha>` for a scanned version. [GitHub installation details (Chinese)](./docs/github-install.md)
+
+The default GitHub package, `0.1.83-latest.0`, targets alpha.2 exactly. Alpha.1 requires its separate `.tgz`; do not use the default command for alpha.1. Actions produces both archives according to the [CI version configuration](./ci/release.json). Sign in to GitHub, select a successful build, download the matching Artifacts, and extract the `.tgz`. The Release remains an unpublished draft. Check the [version and validation scope](#current-status) and follow the [pairing guide (Chinese)](./docs/usage.md).
 
 1. Install a plugin build matching your DSH version and run `pnpm dsh web`. Restart DSH if it says the plugin will load on the next start.
 2. Enter the relay's root URL and computer name, register the computer, and enable the connection.
@@ -57,11 +65,12 @@ Canceling or failed verification keeps the original connection. A successful sav
 
 | Scope | Version and validated behavior |
 | --- | --- |
-| Actions download builds | `0.1.82-latest.0`, with separate archives for official DSH `0.2.1-alpha.1` / `0.2.1-alpha.2`. Packaging, files, and checksums were verified; archives are not interchangeable. [Build guide (Chinese)](./docs/releases.md) |
+| GitHub installation | `0.1.83-latest.0`, with compiled entry points on the default branch, targeting official DSH `0.2.1-alpha.2` exactly. See [installation validation and limits (Chinese)](./docs/github-install.md). |
+| Actions download builds | Separate archives for official DSH `0.2.1-alpha.1` / `0.2.1-alpha.2`, following the CI configuration. Earlier `0.1.82` packaging, files, and checksums were verified; archives are not interchangeable. [Build guide (Chinese)](./docs/releases.md) |
 | Relay URL changes | [Separate settings-page validation (Chinese)](./compatibility/latest-upstream/gateway-settings.md) with `0.1.81-latest.0`; not a complete Remote rerun. |
 | Core Remote | Official DSH `0.2.1-alpha.2` + plugin `0.1.80-latest.0` + the original matching Android app, validated locally in Web + MuMu. [Support matrix (Chinese)](./compatibility/latest-upstream/official-support.md) |
 
-No plugin Release is public yet. A successful `0.1.82` build does not establish full phone compatibility for that package. Electron, physical devices, the complete public-network path, and other versions, plugins, and models need separate validation.
+No plugin Release is public yet. Successful GitHub installation or packaging does not establish full phone compatibility for a new package. Electron, physical devices, the complete public-network path, and other versions, plugins, and models need separate validation.
 
 The phone does not create computer workspaces, accept manually entered commands, or forward computer localhost websites.
 
@@ -69,7 +78,7 @@ The phone does not create computer workspaces, accept manually entered commands,
 
 ### Which plugin package matches my DSH version?
 
-Check computer DSH's version and choose the archive with the exact matching `dsh-<version>` in its name. For example, alpha.2 uses `dshm-plugin-0.1.82-latest.0-dsh-0.2.1-alpha.2.tgz`. Recheck the [compatibility report (Chinese)](./compatibility/latest-upstream/official-support.md) after updating DSH; do not assume an old package or unvalidated version is compatible.
+Check computer DSH's version. The default GitHub package targets `0.2.1-alpha.2` only. For `.tgz` downloads, choose the exact matching `dsh-<version>` in the name; for example, `dshm-plugin-0.1.83-latest.0-dsh-0.2.1-alpha.2.tgz` targets alpha.2. Recheck the [compatibility report (Chinese)](./compatibility/latest-upstream/official-support.md) after updating DSH; do not assume an old package or unvalidated version is compatible.
 
 ### Does claiming a pairing link immediately allow computer access?
 
@@ -81,10 +90,11 @@ No. Device approval allows chat and task operations. Managing computer workspace
 
 ## Development and documentation
 
-TypeScript + Cordis, with a React settings page. GitHub Actions prepares the pinned backend protocol and published SDK packages, building separate archives for the two DSH versions. The default local build still targets the older baseline. See the [automated build guide (Chinese)](./docs/releases.md) and development guide.
+TypeScript + Cordis, with a React settings page. GitHub Actions prepares the pinned backend protocol and published SDK packages, builds separate archives for the two DSH versions, and verifies the committed GitHub package against source. `lib/` provides installed entry points; `dist/` is only the legacy development output. See the [build guide (Chinese)](./docs/releases.md) and development guide.
 
 ```text
 src/              Computer plugin, conversation adapter, and settings page
+lib/              Committed GitHub install files, rebuilt and checked in CI
 scripts/          Build and audit scripts
 tests/            Plugin tests and fixtures
 docs/             Usage, development, and technical documentation
@@ -96,5 +106,6 @@ Detailed guides are currently in Chinese:
 - [Installation and usage](./docs/usage.md): connection, approval, and revocation.
 - [Development guide](./docs/development.md): dependencies, builds, and versions.
 - [Downloads and releases](./docs/releases.md): Actions packages and release drafts.
+- [GitHub installation and market submission](./docs/github-install.md): official commands, pinned commits, and versions.
 - [Support matrix](./compatibility/latest-upstream/official-support.md): validated and unvalidated scope.
 - [Knowledge catalog](./docs/project-knowledge/catalog.md): architecture, interfaces, and validation evidence.
