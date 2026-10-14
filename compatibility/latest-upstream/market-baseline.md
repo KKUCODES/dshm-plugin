@@ -48,7 +48,7 @@ Android 使用已存在的独立 MuMu 设备 3、`127.0.0.1:16480`，本轮新�
 
 ## 重复验证与边界
 
-插件运行 `npm run test:github`、`npm run test:compat`、`npm run build:github -- --check`。设置 `DSHM_DSH_VERSION` 为三版之一后，`prepare:ci` 和 `build:ci` 生成对应精确归档；两版共同安装目标可执行 `npm run verify:github`，只验证正常安装/Web/卸载，默认不使用模型。
+先通过 `prepare:ci` 准备 rc.2 和 alpha.2 的固定 SDK，再运行 `npm run test:github`、`npm run test:compat`、`npm run build:github -- --check`。端点测试从所选 SDK 读取官方运行依赖，默认使用 alpha.2。设置 `DSHM_DSH_VERSION` 为三版之一后，`prepare:ci` 和 `build:ci` 生成对应精确归档；两版共同安装目标可执行 `npm run verify:github`，只验证正常安装/Web/卸载，默认不使用模型。
 
 可选真实协议检查需要先构建相邻后端，设置 `DSHM_REMOTE_PROBE=1`。真实模型额外通过 `DSHM_TEST_CREDENTIALS_FILE` 明确指定已有专用测试凭据；脚本只取 `refs.DEEPSEEK_API_KEY`，不复制原浏览器或电脑身份，不输出凭据。Android 专项还需独立 `.baselinetest` 包、`DSHM_ANDROID_PROBE=1`、`DSHM_ANDROID_SERIAL=127.0.0.1:16480` 与实际 ADB 路径，不能在用户正式 UID 清数据。
 
@@ -66,3 +66,4 @@ Android 使用已存在的独立 MuMu 设备 3、`127.0.0.1:16480`，本轮新�
 - 验证器曾给无正文的票据请求添加 JSON Content-Type、把标题当作列表顶层字段、误将撤销状态期望为 403。分别按真实 HTTP 和官方声明/生产存储契约修正，失败报告保留。
 - 首次 write 已获 `allowed-once`，但测试提示词未先 read，官方返回 `FS_NOT_OBSERVED`。修正提示词为先 read、再请求 write；不绕过官方保护。修正后的两版真实允许与拒绝均通过。
 - Windows Gradle 命令第一次未引用包含点号的 `-P` 参数而失败，引用后成功。以上测试驱动或环境失败不记作通过，也不据此修改 DSH。
+- 首次云端 alpha.2 构建在启动回归中缺少开发依赖 `dsh-session`；干净本地安装复现。开发清单补齐 `dsh-session` 和其 `dsh-scope` peer，端点测试改为从固定官方 SDK 加载运行依赖，不依靠本机残留包。官方安装、生产 peer 范围与运行代码保持原样；后续云端结果以实际 Actions 为准。

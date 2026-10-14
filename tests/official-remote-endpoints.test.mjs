@@ -1,13 +1,17 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp } from 'node:fs/promises';
+import { access, mkdir, mkdtemp } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { test } from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
+import { sdkVariant } from '../scripts/dsh-versions.mjs';
 
 const root = resolve(import.meta.dirname, '..');
-const output = resolve(root, 'artifacts/official-endpoint-policy-tests');
+const sdk = resolve(root, 'artifacts/ci/sdk', sdkVariant(process.env.DSHM_DSH_VERSION ?? '0.2.1-alpha.2'));
+await access(resolve(sdk, 'node_modules/@deepseek-ai/dsh/package.json'));
+// 端点适配使用已准备的官方 SDK，避免从旧开发环境偶然取得未声明的 peer。
+const output = resolve(sdk, 'endpoint-policy-tests');
 await mkdir(output, { recursive: true });
 const directory = await mkdtemp(resolve(output, 'run-'));
 const entry = resolve(directory, 'remote-adapter.mjs');
