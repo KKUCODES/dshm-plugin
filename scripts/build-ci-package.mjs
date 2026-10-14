@@ -24,7 +24,9 @@ const packed = spawnSync(process.execPath, [process.env.npm_execpath, 'pack', '-
   { cwd: built.target, encoding: 'utf8', windowsHide: true });
 assert.equal(packed.status, 0, packed.stderr);
 const [archive] = JSON.parse(packed.stdout);
-assert.ok(archive.files.every(file => /^(dist\/|cordis\.patch\.yml$|README\.md$|package\.json$)/.test(file.path)), 'Unexpected archive content');
+assert.ok(archive.files.every(file => /^(dist\/|cordis\.patch\.yml$|LICENSE$|README\.md$|package\.json$)/.test(file.path)), 'Unexpected archive content');
+assert.equal(built.manifest.license, 'MIT', 'Plugin package must declare its license');
+assert.ok(archive.files.some(file => file.path === 'LICENSE'), 'Plugin archive must include LICENSE');
 const name = `dshm-plugin-${candidateVersion}-dsh-${version}.tgz`;
 const bytes = await readFile(resolve(output, archive.filename));
 await copyFile(resolve(output, archive.filename), resolve(output, name));

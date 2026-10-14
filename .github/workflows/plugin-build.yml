@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-    paths: ['src/**', 'lib/**', 'scripts/**', 'tests/github-package.test.mjs', 'ci/**', 'package*.json', 'tsconfig*.json', 'cordis.patch.yml', '.github/workflows/**']
+    paths: ['src/**', 'lib/**', 'scripts/**', 'tests/github-package.test.mjs', 'ci/**', 'package*.json', 'tsconfig*.json', 'cordis.patch.yml', 'LICENSE', '.github/workflows/**']
   pull_request:
     branches: [main]
   workflow_dispatch:

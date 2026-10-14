@@ -49,9 +49,10 @@ for (const name of Object.keys(manifest.peerDependencies)) {
   manifest.peerDependencies[name] = peer.version;
 }
 await mkdir(resolve(target, 'dist'), { recursive: true });
-manifest.files = ['dist/**/*.js', 'dist/**/*.js.map', 'dist/**/*.d.ts', 'cordis.patch.yml', 'README.md'];
+manifest.files = ['dist/**/*.js', 'dist/**/*.js.map', 'dist/**/*.d.ts', 'cordis.patch.yml', 'LICENSE', 'README.md'];
 await writeFile(resolve(target, 'package.json'), JSON.stringify(manifest, null, 2) + '\n');
 await copyFile(resolve(root, 'cordis.patch.yml'), resolve(target, 'cordis.patch.yml'));
+await copyFile(resolve(root, 'LICENSE'), resolve(target, 'LICENSE'));
 await copyFile(resolve(root, 'compatibility/latest-upstream/candidate-README.md'), resolve(target, 'README.md'));
 const host = await build({ entryPoints: [resolve(snapshot, 'src/index.ts')], outfile: resolve(target, 'dist/index.js'),
   bundle: true, platform: 'node', target: 'node22', format: 'esm', sourcemap: true,

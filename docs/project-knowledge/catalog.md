@@ -4,6 +4,8 @@
 
 GitHub 安装与投稿：[官方一条命令、默认分支预编译产物与固定提交](../github-install.md)；[独立 Git 与官方 alpha.2 安装记录](../../compatibility/latest-upstream/github-install.md)。安装专项不代替完整 Remote 兼容验收。
 
+开源许可：[MIT LICENSE](../../LICENSE)，版权署名 `2026 KKUCODES`；项目原创代码使用 MIT，第三方内容保留原许可。包声明及后续归档的许可证纳入[安装与投稿规则](../github-install.md#投稿)。
+
 自动构建与下载：[三个 DSH 版本的公开发行包、固定 SDK 和草稿发布流程](../releases.md)。`0.1.84` 已公开发布并完成匿名下载校验；原本地与历史候选入口保持，CI 归档不代替真实 DSH 与 Android 兼容验收。
 
 公开阅读入口：[项目首页](../../README.md)、[English](../../README.en.md)、[安装与使用](../usage.md)、[开发指南](../development.md)、[README 图片来源](../images/README.md)。首页只介绍产品和使用入口，构建与版本细节从独立指南进入；下方保留各阶段的技术依据。

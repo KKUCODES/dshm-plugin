@@ -5,7 +5,7 @@
     "0.2.0-rc.2",
     "0.2.1-alpha.2"
   ],
-  "sourceDigest": "61b040e530ec6b109fa8026848c3910011ff0ab134b7e2b94f455d608154477f",
+  "sourceDigest": "80211d355b12080a326f06368ce9d5a758fef5120a561672ad2764a8485e551d",
   "files": {
     "lib/attachment-desktop.d.ts": "43c9702e5e0ecc381cee91f583328299765dcf7f45015ce3dfa0b2b1d836cb75",
     "lib/attachment-office.d.ts": "3b7b6fe6881c7d1900d381084b2b30b0270b9b2e3c19a01c2b52bf0f0c0c4d78",

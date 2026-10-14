@@ -117,3 +117,7 @@ Detailed guides are currently in Chinese:
 - [GitHub installation and market submission](./docs/github-install.md): official commands, pinned commits, and versions.
 - [Support matrix](./compatibility/latest-upstream/official-support.md): validated and unvalidated scope.
 - [Knowledge catalog](./docs/project-knowledge/catalog.md): architecture, interfaces, and validation evidence.
+
+## License
+
+Original code in this project is licensed under the [MIT License](./LICENSE). Third-party code, dependencies, and assets retain their respective licenses and terms of use.

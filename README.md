@@ -115,3 +115,7 @@ compatibility/    版本支持与兼容验证资料
 - [GitHub 安装与市场投稿](./docs/github-install.md)：官方命令、固定提交及版本要求。
 - [支持清单](./compatibility/latest-upstream/official-support.md)：已验与未验范围。
 - [知识库](./docs/project-knowledge/catalog.md)：架构、接口与验证资料。
+
+## 许可证
+
+本项目原创代码采用 [MIT 许可证](./LICENSE)。第三方代码、依赖和素材遵循各自的许可证与使用条件。
