@@ -52,6 +52,8 @@ https://github.com/KKUCODES/dshm-plugin
 
 `0.1.83-latest.0` 已通过独立本地 Git 仓库的官方 alpha.2 命令安装、74 个运行/声明文件摘要核对、正常 Web 启动、实际浏览器配置页加载、官方卸载及自有测试服务退出。不使用相邻后端目录、不添加构建许可、不修改 DSH 本体。详细证据见[Git 安装验证记录](../compatibility/latest-upstream/github-install.md)。
 
+公开 GitHub 提交 `a2c267902f4df1429057e7f26c6b3ce92ff13402` 另通过同一官方命令的实际远端下载、安装、加载与卸载；[云端 Actions](https://github.com/KKUCODES/dshm-plugin/actions/runs/38505653655)的两版打包与 alpha.2 产物一致性检查成功。
+
 安装专项不代表新包已经完成全量 Remote 或 Android 兼容回归。此前核心 Remote 的本地通过组合仍为 alpha.2＋插件 `0.1.80-latest.0`＋原配套 Android；公网、真机、Electron 与其他版本另验。
 
 ## 维护者更新

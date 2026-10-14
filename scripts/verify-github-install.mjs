@@ -19,8 +19,9 @@ const official = JSON.parse(await readFile(join(cliRoot, 'node_modules/@deepseek
 assert.equal(official.version, '0.2.1-alpha.2');
 const expected = await validateGithubPackage(root);
 const home = join(output, 'home');
+// Git 归档会先完整解压；Windows 使用较短的自有缓存路径，避免叠加仓库长文件名。
 const env = { ...process.env, DSH_HOME: home, DSH_TELEMETRY_DISABLED: '1',
-  npm_config_store_dir: join(output, 'pnpm-store'), npm_config_cache: join(output, 'npm-cache') };
+  npm_config_store_dir: join(root, 'artifacts/p'), npm_config_cache: join(root, 'artifacts/npm-cache') };
 for (const name of Object.keys(env)) {
   if (/^(?:DSH_TELEMETRY_OTLP_URL|DSH_MOBILE_|DEEPSEEK_API_KEY|OPENAI_API_KEY|GH_TOKEN|GITHUB_TOKEN)/.test(name)) delete env[name];
 }
