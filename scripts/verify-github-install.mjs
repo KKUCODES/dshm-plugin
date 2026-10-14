@@ -77,7 +77,8 @@ try {
     assert.ok(npmCli, 'Run local verification through npm run verify:github');
     const packed = JSON.parse(await run(process.execPath, [npmCli, 'pack', '--json', '--ignore-scripts', '--pack-destination', output], root));
     assert.equal(packed.length, 1);
-    assert.ok(packed[0].files.every(file => /^(?:lib\/|package\.json$|README(?:\.en)?\.md$|cordis\.patch\.yml$)/.test(file.path)));
+    assert.ok(packed[0].files.every(file => /^(?:lib\/|package\.json$|README(?:\.en)?\.md$|cordis\.patch\.yml$|LICENSE$)/.test(file.path)));
+    assert.ok(packed[0].files.some(file => file.path === 'LICENSE'), 'Git install payload must include LICENSE');
     const repository = join(output, 'standalone-repository');
     await mkdir(repository);
     await run('tar', ['-xzf', join(output, packed[0].filename), '-C', repository, '--strip-components=1']);
@@ -100,6 +101,9 @@ try {
   const manifest = JSON.parse(await readFile(join(installed, 'package.json'), 'utf8'));
   assert.equal(manifest.version, expected.pluginVersion);
   assert.equal(manifest.main, './lib/index.js');
+  assert.equal(manifest.license, 'MIT');
+  assert.equal((await readFile(join(installed, 'LICENSE'), 'utf8')).replace(/\r\n/g, '\n'),
+    (await readFile(join(root, 'LICENSE'), 'utf8')).replace(/\r\n/g, '\n'), 'Installed LICENSE must match the source');
   const receipt = JSON.parse(await readFile(join(root, 'lib/build-info.json'), 'utf8'));
   for (const [path, expectedHash] of Object.entries(receipt.files)) {
     assert.equal(createHash('sha256').update(await readFile(join(installed, path))).digest('hex'), expectedHash, `Installed file differs: ${path}`);
