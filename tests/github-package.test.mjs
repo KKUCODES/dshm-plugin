@@ -20,12 +20,13 @@ async function fixture() {
       main: './lib/index.js', types: './lib/index.d.ts',
       exports: { '.': { default: './lib/index.js' }, './client': { default: './lib/client.js', types: './lib/client/index.d.ts' } },
       dsh: { bundle: { patch: './cordis.patch.yml' } },
-      peerDependencies: { '@deepseek-ai/dsh-api-gateway': '0.2.1-alpha.2' },
+      peerDependencies: { '@deepseek-ai/dsh-api-gateway': '0.2.0-rc.2 || 0.2.1-alpha.2' },
       devDependencies: { '@dsh-mobile/protocol': 'file:../backend/packages/protocol' } }),
     'ci/release.json': JSON.stringify({ version: '0.1.83-latest.0' }),
     'ci/sdk/alpha2/package.json': '{}', 'ci/sdk/alpha2/package-lock.json': '{}',
+    'ci/sdk/rc2/package.json': '{}', 'ci/sdk/rc2/package-lock.json': '{}',
     'scripts/build-github-package.mjs': '// build', 'scripts/build-latest-candidate.mjs': '// candidate',
-    'scripts/github-package.mjs': '// inputs', 'src/index.ts': 'export default {};\n',
+    'scripts/github-package.mjs': '// inputs', 'scripts/dsh-versions.mjs': '// versions', 'src/index.ts': 'export default {};\n',
     'cordis.patch.yml': '- insert:\n    - id: dsh-mobile\n      name: "@dsh-mobile/plugin"\n',
     'lib/index.js': 'export default {};\n', 'lib/client.js': '// client\n',
     'lib/index.d.ts': 'declare const plugin: unknown;\n', 'lib/client/index.d.ts': 'export {};\n',
@@ -38,7 +39,8 @@ async function fixture() {
   const inventory = Object.fromEntries(Object.entries(files).filter(([path]) => path.startsWith('lib/'))
     .map(([path, text]) => [path, createHash('sha256').update(text).digest('hex')]));
   await writeFile(join(root, 'lib/build-info.json'), JSON.stringify({ pluginVersion: '0.1.83-latest.0',
-    dshVersion: '0.2.1-alpha.2', sourceDigest: await githubSourceDigest(root), files: inventory }));
+    dshVersion: '0.2.1-alpha.2', dshVersions: ['0.2.0-rc.2', '0.2.1-alpha.2'],
+    sourceDigest: await githubSourceDigest(root), files: inventory }));
   return root;
 }
 
@@ -92,4 +94,15 @@ test('unlisted package files and unpublished protocol type imports are rejected'
   receipt.files['lib/config.d.ts'] = createHash('sha256').update(text).digest('hex');
   await writeFile(join(root, 'lib/build-info.json'), JSON.stringify(receipt));
   await assert.rejects(validateGithubPackage(root), /Unpublished protocol dependency/);
+});
+
+test('a wildcard or an unreviewed host version cannot replace the two verified versions', async () => {
+  const root = await fixture();
+  const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
+  manifest.peerDependencies['@deepseek-ai/dsh-api-gateway'] = '*';
+  await writeFile(join(root, 'package.json'), JSON.stringify(manifest));
+  const receipt = JSON.parse(await readFile(join(root, 'lib/build-info.json'), 'utf8'));
+  receipt.sourceDigest = await githubSourceDigest(root);
+  await writeFile(join(root, 'lib/build-info.json'), JSON.stringify(receipt));
+  await assert.rejects(validateGithubPackage(root), /Unexpected SDK peer/);
 });

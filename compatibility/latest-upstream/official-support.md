@@ -1,5 +1,7 @@
 # 当前纯插件组合的兼容验收结论
 
+当前 `0.1.84-latest.0` 已增加官方 `0.2.0-rc.2`，同时保留 `0.2.1-alpha.2`；共同安装包、真实模型/审批/重连和手机配套要求见[市场基线双版本验证](./market-baseline.md)。下方完整扩展矩阵仍对应原 `0.1.80` 的 alpha.2 组合，不将这次核心回归扩大为所有扩展重验。
+
 - 状态：下列固定组合的本地兼容验收完成；这是未发布的本地候选。
 - 维护角色：DSHM 插件与手机端维护者；核验日期：2026-10-10。
 - 来源：[功能矩阵](./official-feature-matrix.md)、[实际归档安装](../../artifacts/official-plugin-only/archive-install-61435351-e4be-4e0f-9e2e-b62ee2517789.json)、[最终恢复审计](../../../dsh-mobile/artifacts/official-plugin-only/turn77-restoration-audit.json)。

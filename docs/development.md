@@ -10,7 +10,7 @@
 
 ```text
 src/                  Host 入口、会话适配、各项能力与 client/ 配置页
-lib/                  随源码提交的 alpha.2 GitHub 安装产物
+lib/                  随源码提交的 rc.2 / alpha.2 共用安装产物
 tests/                单元测试、回归和夹具
 scripts/              候选构建、接口与交付审查
 docs/                 使用指南、开发说明、知识库与首页图片
@@ -29,10 +29,10 @@ artifacts/            本地产物与验收证据，不提交 Git
 
 | 入口 | 用途与边界 |
 | --- | --- |
-| 根目录 `package.json` 的运行入口 | 版本 `0.1.83-latest.0`，`main` / `exports` 指向提交的 `lib/`，精确匹配 DSH `0.2.1-alpha.2`。不运行 Git 安装生命周期脚本。 |
+| 根目录 `package.json` 的运行入口 | 版本 `0.1.84-latest.0`，`main` / `exports` 指向提交的 `lib/`，明确支持 DSH rc.2 与 alpha.2，不接受范围内任意其他预发布。不运行 Git 安装生命周期脚本。 |
 | 根目录开发依赖、`build` / `typecheck` / `test` | 保留 DSH `0.1.6-alpha.2` 旧版源代码回归环境，只生成忽略的 `dist/`。开发依赖与新的运行 peer 版本不同，安装维护依赖时使用 `--legacy-peer-deps`；发布构建仍使用单独固定的 SDK。 |
 | `build:github` / `check:github` | 构建或检查当前 GitHub 安装 `lib/`；源码摘要与逐文件摘要随产物记录，CI 重新构建比较。 |
-| `prepare:ci` / `build:ci` | 按 `ci/release.json` 版本与所选固定 SDK 生成 alpha.1/alpha.2 独立 `.tgz`，不覆盖 `lib/`。 |
+| `prepare:ci` / `build:ci` | 按 `ci/release.json` 版本与所选固定 SDK 生成 rc.2 / alpha.1 / alpha.2 独立 `.tgz`，不覆盖 `lib/`。 |
 | `scripts/build-official-plugin-only.mjs` | 当前官方 DSH `0.2.1-alpha.2` 的纯插件候选入口，生成 `0.1.80-latest.0`。依赖已准备的隔离 SDK，使用固定产物目录。 |
 | `scripts/build-official-gateway-settings.mjs` | 地址修改候选 `0.1.81-latest.0`。默认针对官方 `0.2.1-alpha.2`，传入 `--alpha1` 针对 `0.2.1-alpha.1`；两个归档的宿主版本精确固定，不能混装。 |
 
@@ -68,9 +68,9 @@ npm run build
 npm test
 ```
 
-普通 `build` 的 `dist/` 不再是发布入口。要生成 GitHub 安装产物，先准备官方 alpha.2 SDK 和已编译共享协议，执行 `npm run build:github`；需逐文件核对时执行 `npm run build:github -- --check`。
+普通 `build` 的 `dist/` 不再是发布入口。要生成 GitHub 安装产物，先准备官方 rc.2 和 alpha.2 SDK 及已编译共享协议，执行 `npm run build:github`；它分别检查两套类型，生成一份运行包。需逐文件核对时执行 `npm run build:github -- --check`。
 
-需要当前 alpha.2 的根目录预编译归档时，确保 `lib/` 已通过检查，并执行：
+需要当前 rc.2 / alpha.2 共用的根目录预编译归档时，确保 `lib/` 已通过检查，并执行：
 
 ```powershell
 npm run pack:local

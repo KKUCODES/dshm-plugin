@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { openGatewayStream } from '../src/gateway-stream.js'
 import { workspaceFilePayload } from '../src/workspace-file-contract.js'
 
-test.each(['0.2.1-alpha.1', '0.2.1-alpha.2'])('%s 使用公开五参数流和options字节契约', async version => {
+test.each(['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2'])('%s 使用公开五参数流和options字节契约', async version => {
   const signal = new AbortController().signal
   let received: unknown[] = []
   const gateway = { wireStream: { open: async (...args: unknown[]) => {

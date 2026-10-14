@@ -4,19 +4,19 @@ import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { buildLatestCandidate } from './build-latest-candidate.mjs';
+import { sdkVariant } from './dsh-versions.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const version = process.env.DSHM_DSH_VERSION ?? '0.2.1-alpha.2';
 const release = JSON.parse(await readFile(resolve(root, 'ci/release.json'), 'utf8'));
 const candidateVersion = process.env.DSHM_PLUGIN_VERSION ?? release.version;
-assert.ok(['0.2.1-alpha.1', '0.2.1-alpha.2'].includes(version));
 assert.match(candidateVersion, /^0\.1\.\d+-latest\.0$/);
 assert.ok(process.env.npm_execpath, 'Run through npm run build:ci');
 const source = await readFile(resolve(root, 'src/index.ts'), 'utf8');
 for (const removed of ['CommandOutput', 'pendingNotificationsOf', 'dshmDesktopApps', 'cordisInspectService']) {
   assert.ok(!source.includes(removed), `Patch-only startup wiring remains: ${removed}`);
 }
-const sdkRoot = resolve(root, 'artifacts/ci/sdk', version.endsWith('.2') ? 'alpha2' : 'alpha1');
+const sdkRoot = resolve(root, 'artifacts/ci/sdk', sdkVariant(version));
 const built = await buildLatestCandidate('candidate', { targetVersion: version, candidateVersion, sdkRoot });
 const output = resolve(root, 'artifacts/ci/packages');
 await mkdir(output, { recursive: true });

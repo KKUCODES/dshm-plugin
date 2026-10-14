@@ -2,14 +2,15 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-
-export const githubDshVersion = '0.2.1-alpha.2';
+import { githubDshVersion, githubDshVersions, githubPeerRange } from './dsh-versions.mjs';
+export { githubDshVersion, githubDshVersions } from './dsh-versions.mjs';
 
 /** Windows 与 CI 按同一文件顺序及换行计算发布输入，避免源码变更后仍安装旧产物。 */
 export async function githubSourceDigest(root) {
   const inputs = ['package.json', 'cordis.patch.yml', 'ci/release.json',
     'scripts/build-github-package.mjs', 'scripts/build-latest-candidate.mjs',
-    'scripts/github-package.mjs', 'ci/sdk/alpha2/package.json', 'ci/sdk/alpha2/package-lock.json'];
+    'scripts/github-package.mjs', 'scripts/dsh-versions.mjs',
+    ...['rc2', 'alpha2'].flatMap(variant => [`ci/sdk/${variant}/package.json`, `ci/sdk/${variant}/package-lock.json`])];
   async function collect(relative) {
     for (const entry of (await readdir(join(root, relative), { withFileTypes: true })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)) {
       const path = `${relative}/${entry.name}`;
@@ -34,6 +35,7 @@ export async function validateGithubPackage(root) {
   const receipt = JSON.parse(await readFile(join(root, 'lib/build-info.json'), 'utf8'));
   assert.equal(manifest.version, release.version, 'GitHub package and CI release versions must agree');
   assert.equal(receipt.dshVersion, githubDshVersion);
+  assert.deepEqual(receipt.dshVersions, githubDshVersions);
   assert.equal(receipt.pluginVersion, manifest.version);
   assert.equal(receipt.sourceDigest, await githubSourceDigest(root), 'Run npm run build:github after changing release inputs');
   assert.equal(manifest.main, './lib/index.js');
@@ -45,7 +47,7 @@ export async function validateGithubPackage(root) {
   }
   for (const [name, spec] of Object.entries({ ...manifest.dependencies, ...manifest.peerDependencies })) {
     assert.ok(!/^(?:file:|link:|workspace:|\.\.?\/)/.test(spec), `Local install dependency: ${name}`);
-    if (name.startsWith('@deepseek-ai/dsh-')) assert.equal(spec, githubDshVersion, `Unexpected DSH peer: ${name}`);
+    if (Object.hasOwn(manifest.peerDependencies ?? {}, name)) assert.equal(spec, githubPeerRange(name), `Unexpected SDK peer: ${name}`);
   }
   for (const path of [manifest.main, manifest.types, manifest.exports['./client'].default,
     manifest.exports['./client'].types, manifest.dsh.bundle.patch, './lib/config.d.ts']) {
@@ -73,5 +75,6 @@ export async function validateGithubPackage(root) {
         `Unpublished protocol dependency in declaration: ${path}`);
     }
   }
-  return { pluginVersion: manifest.version, dshVersion: githubDshVersion, files: Object.keys(receipt.files).length };
+  return { pluginVersion: manifest.version, dshVersion: githubDshVersion, dshVersions: githubDshVersions,
+    files: Object.keys(receipt.files).length };
 }

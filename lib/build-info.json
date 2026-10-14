@@ -1,7 +1,11 @@
 {
-  "pluginVersion": "0.1.83-latest.0",
+  "pluginVersion": "0.1.84-latest.0",
   "dshVersion": "0.2.1-alpha.2",
-  "sourceDigest": "691699f060ae795c7cfdacd8b5ceddf70db76985d020e9652967ef1e9c137e27",
+  "dshVersions": [
+    "0.2.0-rc.2",
+    "0.2.1-alpha.2"
+  ],
+  "sourceDigest": "1da0679edde5fd0b9a43e03dddf387914d369a68dfe257c01cd254674289eed2",
   "files": {
     "lib/attachment-desktop.d.ts": "43c9702e5e0ecc381cee91f583328299765dcf7f45015ce3dfa0b2b1d836cb75",
     "lib/attachment-office.d.ts": "3b7b6fe6881c7d1900d381084b2b30b0270b9b2e3c19a01c2b52bf0f0c0c4d78",
@@ -26,7 +30,7 @@
     "lib/feedback-notifications.d.ts": "5925dc625d946078fe8be7ac18b35d90af8a30abdc8513500deb7bcb90bd0685",
     "lib/gateway-stream.d.ts": "b8d4914b15b1e3d79dc53412ddf35c5ffef492e4606a088a64d966876004a3ab",
     "lib/index.d.ts": "c9103a3bb934f1bb05fb672b260fb93430902e8922cc8c03ede675f8a11def36",
-    "lib/index.js": "fc1d348c0f847d3e7a14e2eccdaf3b87111dc3593772c7c8f062004c2ed34b3b",
+    "lib/index.js": "cbf22418489333828f9cbe2f7710bd592681a661b7d6f6e01f456d5dd2b6d70d",
     "lib/job-control.d.ts": "01cd62406f55ca7bf28a66e2bee5480c2357fd33d1c44acec21ed7c0d8c6cbcf",
     "lib/job-output.d.ts": "1c01e94d9d48933570cd8d1308d48eac30a465666140c7fe05679e4c4b54588d",
     "lib/job-ring.d.ts": "3f10f4c4ae81710f0f50e6cfd3801ddc32e6764bdcb0ebe0c1f7ec12c9506fab",
@@ -37,7 +41,7 @@
     "lib/pending-notifications.d.ts": "4ae85ad2a54bb1ade7cce86eecf7d54379e920e605a868c6ae59dbad9ae7bdeb",
     "lib/plugin-operations.d.ts": "67882e700b99ba30d1574ce92ca7e48cbf4765c9c2f6fcb5659f7a6136bdd18e",
     "lib/preset-directory.d.ts": "1830c46f52611d8d3f6908f5f60f9ef9630b3661d877daa35edc86ce419a6214",
-    "lib/profile-dsh-version.d.ts": "a73bdbc0c30b1fb1fbfed5d4045b43b1e6cdcf450a3069f5b6064f63ba0064ae",
+    "lib/profile-dsh-version.d.ts": "3445112732d305df013ed36080eadff4b9269f23ff0f3a522453f5fb5f0cbbdf",
     "lib/profile-preset-directory.d.ts": "cc622c450fef4669e05f98c05d331a7b86c7bbdf539432882e6e46440dc512cc",
     "lib/profile-preset-management.d.ts": "61110e4dbf3ec6bbcce249fd88980e917e1ac8c7d1f5b06526bf58994f6ce8c8",
     "lib/profile-providers.d.ts": "0fdb2f5bb1f63dfe5484d8131484987d6dbda2b79026ccb5b549398f9e10248c",

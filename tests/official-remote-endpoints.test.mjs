@@ -16,7 +16,7 @@ await build({ entryPoints: [resolve(root, 'src/remote-adapter.ts')], outfile: en
   external: ['@deepseek-ai/*', 'ws', 'zod'], define: { DSHM_LATEST_CANDIDATE: 'true' } });
 const { RemoteAdapter } = await import(pathToFileURL(entry).href);
 
-for (const version of ['0.2.1-alpha.1', '0.2.1-alpha.2', '0.1.6-alpha.2']) {
+for (const version of ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.1.6-alpha.2']) {
   test(`${version} 的协商和实际请求处理保留各自官方预设边界`, async () => {
     const calls = [];
     const hostId = randomUUID();

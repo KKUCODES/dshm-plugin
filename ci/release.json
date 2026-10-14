@@ -1,5 +1,5 @@
 {
-  "version": "0.1.83-latest.0",
+  "version": "0.1.84-latest.0",
   "backendCommit": "6b0be9b089192349db572e73ef216c3f7f242a5e",
-  "dshVersions": ["0.2.1-alpha.1", "0.2.1-alpha.2"]
+  "dshVersions": ["0.2.0-rc.2", "0.2.1-alpha.1", "0.2.1-alpha.2"]
 }

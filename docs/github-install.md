@@ -4,7 +4,7 @@
 
 ## 安装
 
-当前仓库默认分支的插件版本为 `0.1.83-latest.0`，面向官方 DSH **`0.2.1-alpha.2`**。准备 Git、pnpm 和 Node.js 24；先确认电脑 DSH 版本，再运行：
+当前仓库默认安装包为 `0.1.84-latest.0`，共用一份运行产物支持官方 DSH **`0.2.0-rc.2` / `0.2.1-alpha.2`**。准备 Git、pnpm 和 Node.js 24；先确认电脑 DSH 版本，再运行：
 
 ```sh
 dsh plugin --profile web add github:KKUCODES/dshm-plugin
@@ -44,11 +44,15 @@ https://github.com/KKUCODES/dshm-plugin
 
 市场是社区项目，只接收仓库地址，扫描默认分支的特定提交，并生成固定提交安装命令。默认分支中必须存在包声明、其引用的 Cordis 补丁和可运行入口。源码、编译产物与说明一起保留，方便市场静态检查与使用者审阅。
 
-市场扫描结果不代替实际安装、手机功能或安全审查。市场当前示例的 DSH/Cordis 基线与本插件的 alpha.2 目标不同，可能显示版本不匹配或待核对；不会为了获得“兼容”标签而放宽未经验证的宿主版本。
+市场扫描结果不代替实际安装、手机功能或安全审查。当前安装声明只列出已核验的离散组合：Cordis `4.0.4 || 4.0.5-alpha.1`，DSH 组件 `0.2.0-rc.2 || 0.2.1-alpha.2`。这覆盖市场当前的 rc.2 / Cordis 4.0.4 基线；网站需要扫描包含本次更新的提交后才会反映新声明，不保证未来基线自动兼容。
 
 本次适配不代用户提交投稿，是否收录和网站最终扫描结果由市场决定。
 
 ## 验证范围
+
+`0.1.84-latest.0` 已在两版未修改的官方 DSH 中分别通过同一 Git 包的安装、74 个文件摘要、正常 Web 启动、真实设置页与卸载。实际生产中转、配对批准、真实模型、流式历史、模型同步、写入允许/拒绝及重连/撤权也已验证，详见[双版本记录](../compatibility/latest-upstream/market-baseline.md)。手机还需安装包含本次兼容更新的版本，公开 preview.1 不能连接 rc.2。
+
+以下保留上一版 GitHub 安装专项的历史证据：
 
 `0.1.83-latest.0` 已通过独立本地 Git 仓库的官方 alpha.2 命令安装、74 个运行/声明文件摘要核对、正常 Web 启动、实际浏览器配置页加载、官方卸载及自有测试服务退出。不使用相邻后端目录、不添加构建许可、不修改 DSH 本体。详细证据见[Git 安装验证记录](../compatibility/latest-upstream/github-install.md)。
 
@@ -58,7 +62,7 @@ https://github.com/KKUCODES/dshm-plugin
 
 ## 维护者更新
 
-`lib/` 是正式 GitHub 安装入口，`dist/` 是历史开发输出，两者不能替换使用。修改源码或宿主版本后，更新 `package.json` 与 `ci/release.json` 的版本、准备 alpha.2 SDK 和共享协议，再执行：
+`lib/` 是正式 GitHub 安装入口，`dist/` 是历史开发输出，两者不能替换使用。修改源码或宿主版本后，更新 `package.json` 与 `ci/release.json` 的版本、准备 rc.2 和 alpha.2 两套固定 SDK 及共享协议，再执行：
 
 ```sh
 npm run build:github
@@ -68,10 +72,12 @@ npm run build:github -- --check
 
 提交源码与生成的 `lib/`。CI 重新编译并逐文件比较，源码与产物不同会失败；`.gitattributes` 固定 `lib/` 为 LF，避免 Windows Git 转换换行后破坏摘要。生成文件不得包含本机凭据、配对链接或用户会话。
 
-真实安装验证使用官方 alpha.2 npm 安装目录，默认路径见脚本，也可通过 `DSHM_OFFICIAL_DSH_ROOT` 指向已有的官方安装。它创建自己的 profile 和临时 Git 仓库，不操作日常 profile：
+真实安装验证默认使用 `artifacts/ci/sdk/alpha2` 中的官方 CLI；设置 `DSHM_DSH_VERSION=0.2.0-rc.2` 改用 rc2 目录，也可通过 `DSHM_OFFICIAL_DSH_ROOT` 指向对应的官方安装。它创建自己的 profile 和临时 Git 仓库，不操作日常 profile：
 
 ```sh
 npm run verify:github
 ```
 
 远端安装时可在同一入口传入 `github:KKUCODES/dshm-plugin#<完整提交号>`；仅接受本仓库的完整 SHA。验证器只测试安装、加载与卸载，不注册电脑、不配对手机、不调用模型。
+
+可选 `DSHM_REMOTE_PROBE=1` 使用相邻后端已编译的真实网关与内存 PostgreSQL 测试引擎，补验配对、会话和撤权。设置 `DSHM_TEST_CREDENTIALS_FILE` 后仅从明确指定的专用测试凭据中取 DeepSeek Key，追加真实模型与审批；不复制旧电脑身份或设备凭据，不输出 Key。`DSHM_ANDROID_PROBE=1` 还需本轮独立 Android 测试包及指定 MuMu。该扩展入口的配置和边界见[双版本验证记录](../compatibility/latest-upstream/market-baseline.md)，不作为普通用户安装前置。

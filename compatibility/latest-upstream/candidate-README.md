@@ -1,6 +1,8 @@
 # DSHM 电脑插件兼容候选
 
-此包是未发布的本地候选，插件版本以本包 `package.json` 的 version 为准。目标 DSH 版本以其中的精确 peerDependencies 为准：候选分别针对官方预发布 `0.2.1-alpha.1` 或 `0.2.1-alpha.2` 构建，两者不能混装，也不放行任意未来版本。DSHM App 的 SDK 版本须与目标电脑一致。
+此包是未发布候选，插件版本以本包 `package.json` 的 version 为准。归档的目标 DSH 版本以精确 peerDependencies 为准：候选分别针对官方预发布 `0.2.0-rc.2`、`0.2.1-alpha.1` 或 `0.2.1-alpha.2` 构建，不能混装，也不放行任意未来版本。GitHub 默认包另使用明确的 rc.2 / alpha.2 双版本声明。
+
+连接 rc.2 需要包含市场基线兼容更新的 DSHM App；公开 preview.1 仍仅连接 alpha.2。新版 alpha.2 客户端兼容 rc.2 的核心协议，不代表任意 SDK 与宿主可混用。
 
 插件负责连接 DSHM 手机客户端与电脑 DSH。手机使用自己的聊天页面，电脑执行任务，公网中转负责传输。配对仍需要电脑批准；开放注册模式不会跳过设备授权。
 

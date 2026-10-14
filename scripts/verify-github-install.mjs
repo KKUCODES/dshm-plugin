@@ -2,21 +2,24 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { copyFile, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, realpath, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as wait } from 'node:timers/promises';
-import { validateGithubPackage } from './github-package.mjs';
+import { validateGithubPackage, githubDshVersions } from './github-package.mjs';
+import { sdkVariant } from './dsh-versions.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const base = resolve(root, 'artifacts/github-install');
 await mkdir(base, { recursive: true });
 const output = await mkdtemp(join(base, 'run-'));
-const cliRoot = resolve(process.env.DSHM_OFFICIAL_DSH_ROOT ?? join(root, 'artifacts/official-dsh-alpha2'));
+const targetVersion = process.env.DSHM_DSH_VERSION ?? '0.2.1-alpha.2';
+assert.ok(githubDshVersions.includes(targetVersion));
+const cliRoot = resolve(process.env.DSHM_OFFICIAL_DSH_ROOT ?? join(root, 'artifacts/ci/sdk', sdkVariant(targetVersion)));
 const cli = join(cliRoot, 'node_modules/@deepseek-ai/dsh/lib/bin.js');
 const official = JSON.parse(await readFile(join(cliRoot, 'node_modules/@deepseek-ai/dsh/package.json'), 'utf8'));
-assert.equal(official.version, '0.2.1-alpha.2');
+assert.equal(official.version, targetVersion);
 const expected = await validateGithubPackage(root);
 const home = join(output, 'home');
 // Git 归档会先完整解压；Windows 使用较短的自有缓存路径，避免叠加仓库长文件名。
@@ -27,6 +30,16 @@ for (const name of Object.keys(env)) {
 }
 const report = { officialDsh: official.version, pluginVersion: expected.pluginVersion, installedFiles: expected.files, home,
   passed: false, startedAt: new Date().toISOString(), stages: [] };
+// 仅显式指定的专用测试凭据可用于真实模型；不复制浏览器登录或旧设备凭据。
+if (process.env.DSHM_TEST_CREDENTIALS_FILE) {
+  assert.equal(process.env.DSHM_REMOTE_PROBE, '1');
+  const require = createRequire(await realpath(cli));
+  const { parse } = require('yaml');
+  const credentials = parse(await readFile(process.env.DSHM_TEST_CREDENTIALS_FILE, 'utf8'));
+  assert.equal(typeof credentials.refs?.DEEPSEEK_API_KEY, 'string', 'The dedicated test key is missing');
+  env.DEEPSEEK_API_KEY = credentials.refs.DEEPSEEK_API_KEY;
+  report.inference = true;
+}
 let host;
 async function run(binary, args, cwd = output, timeout = 180000) {
   const child = spawn(binary, args, { cwd, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -131,6 +144,13 @@ try {
   assert.ok(!status.error);
   report.pluginStatus = response.status;
   report.stages.push('official-web-plugin-loaded');
+  if (process.env.DSHM_REMOTE_PROBE === '1') {
+    const { verifyRemoteBaseline } = await import('./verify-remote-baseline.mjs');
+    const remote = await verifyRemoteBaseline({ root, home, output, hostOrigin: `http://127.0.0.1:${port}`,
+      cookie, version: targetVersion, inference: report.inference === true });
+    assert.equal(remote.passed && remote.cleanupCompleted, true);
+    report.stages.push('real-relay-remote-baseline-verified');
+  }
   if (process.env.DSHM_GITHUB_UI_PROBE === '1') {
     await writeFile(join(output, 'browser-entry.private.json'), JSON.stringify({ url: loginUrl, port, pid: host.pid }), { mode: 0o600 });
     console.log(JSON.stringify({ stage: 'browser-check-ready', output, port }));

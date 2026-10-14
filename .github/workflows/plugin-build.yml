@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dsh: ['0.2.1-alpha.1', '0.2.1-alpha.2']
+        dsh: ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2']
     env:
       DSHM_DSH_VERSION: ${{ matrix.dsh }}
     defaults:
@@ -67,8 +67,15 @@ jobs:
       - name: Verify committed GitHub install package
         if: matrix.dsh == '0.2.1-alpha.2'
         run: |
+          DSHM_DSH_VERSION=0.2.0-rc.2 npm run prepare:ci
+          npm run test:compat
           npm run test:github
           npm run build:github -- --check
+      - name: Install into an unmodified official DSH and verify Web startup
+        if: matrix.dsh != '0.2.1-alpha.1'
+        run: |
+          npm install --global pnpm@11.7.0 --ignore-scripts --no-audit --no-fund
+          npm run verify:github
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dshm-plugin-${{ matrix.dsh }}
@@ -104,7 +111,8 @@ jobs:
           cat > release-files/RELEASE-NOTES.md <<'NOTES'
           DSHM plugin development candidate. Choose the archive matching your official DSH version exactly.
 
-          - DSH 0.2.1-alpha.1 and 0.2.1-alpha.2 have separate packages.
+          - DSH 0.2.0-rc.2, 0.2.1-alpha.1 and 0.2.1-alpha.2 have separate archive packages.
+          - The default GitHub package supports both 0.2.0-rc.2 and 0.2.1-alpha.2.
           - Install through the official DSH plugin command; no core patches are included.
           - CI packaging is verified separately from real Android and full compatibility validation.
           - SHA-256 and compatibility metadata are included.

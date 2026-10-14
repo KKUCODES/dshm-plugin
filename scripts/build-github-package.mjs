@@ -5,6 +5,7 @@ import { dirname, join, relative as relativePath, resolve } from 'node:path';
 import { build } from 'esbuild';
 import { buildLatestCandidate } from './build-latest-candidate.mjs';
 import { githubDshVersion, githubSourceDigest, validateGithubPackage } from './github-package.mjs';
+import { githubDshVersions, githubPeerRange, sdkVariant } from './dsh-versions.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const check = process.argv.includes('--check');
@@ -16,8 +17,15 @@ assert.equal(manifest.version, release.version);
 const built = await buildLatestCandidate('candidate', {
   targetVersion: githubDshVersion, candidateVersion: release.version, sdkRoot,
 });
-for (const [name, version] of Object.entries(built.manifest.peerDependencies)) {
-  assert.equal(manifest.peerDependencies[name], version, `Root manifest does not match published SDK: ${name}`);
+// 同一源码分别通过两版官方 SDK 的类型检查，运行产物仍只有一份。
+for (const version of githubDshVersions) {
+  const candidate = version === githubDshVersion ? built : await buildLatestCandidate('candidate', {
+    targetVersion: version, candidateVersion: release.version, sdkRoot: resolve(root, 'artifacts/ci/sdk', sdkVariant(version)),
+  });
+  for (const [name, peerVersion] of Object.entries(candidate.manifest.peerDependencies)) {
+    assert.equal(manifest.peerDependencies[name], githubPeerRange(name), `Unexpected GitHub peer range: ${name}`);
+    assert.ok(manifest.peerDependencies[name].split(' || ').includes(peerVersion), `SDK peer is not covered: ${name}@${peerVersion}`);
+  }
 }
 const buildRoot = resolve(root, 'artifacts/github-package-build');
 await mkdir(buildRoot, { recursive: true });
@@ -63,7 +71,7 @@ async function inventory(relative = '') {
   }
 }
 await inventory();
-const receipt = { pluginVersion: release.version, dshVersion: githubDshVersion,
+const receipt = { pluginVersion: release.version, dshVersion: githubDshVersion, dshVersions: githubDshVersions,
   sourceDigest: await githubSourceDigest(root), files };
 await writeFile(join(output, 'build-info.json'), JSON.stringify(receipt, null, 2) + '\n');
 if (check) {
