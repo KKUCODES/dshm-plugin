@@ -32,6 +32,8 @@ GitHub 托管的 Ubuntu 24.04 + Node.js 24。后端协议从固定提交取得�
 
 ## 已核验范围
 
+2026-10-15 的[版本发布 Actions](https://github.com/KKUCODES/dshm-plugin/actions/runs/38718058015)完成 `0.1.85-latest.0` 三版构建、GitHub 预编译载荷一致性以及 rc.2 / alpha.2 官方安装、Web 启动与卸载检查。固定源码为 `80c1fa30056582dfd4b90280ea0fb01b3c0761e8`，共享协议为 `056bf6f19527c58f456ee5f7eec55e715f401ab5`。草稿已公开发布；九个附件均匿名下载并核对 GitHub 资产摘要及校验文件。三份归档各有 66 个文件，版本、MIT 许可证和对应 DSH 依赖均匹配，没有修改 DSH 或构建 SDK。新缓存运行范围见[专项记录](../compatibility/latest-upstream/remote-cache.md)，不以打包通过代替真机或公网验收。
+
 `0.1.84-latest.0` 的三版归档、共同 Git 包两套 SDK 编译、官方安装/Web/卸载和真实核心协议通过本地验证。[双版本记录](../compatibility/latest-upstream/market-baseline.md)。[版本发布 Actions](https://github.com/KKUCODES/dshm-plugin/actions/runs/38529805413)三版构建、产物一致性与 rc.2 / alpha.2 实际安装启动检查通过；公开发行的九个附件均已匿名 GET 200 并核对 SHA-256。
 
 2026-10-13 的[实际云端构建](https://github.com/KKUCODES/dshm-plugin/actions/runs/38369260384)已生成两个 `0.1.82-latest.0` 归档。下载后核对各自 DSH 依赖版本、63 个归档文件与 SHA-256。此记录只证明干净环境可打包，不代表该新包已安装或完成全部 Remote 功能复验。

@@ -7,13 +7,13 @@ DSHM 插件装在电脑上的官方 DSH 中。手机用 DSHM 的 Remote 连接�
 | 部分 | 获取与版本选择 |
 | --- | --- |
 | 电脑 | 官方 DSH `0.2.0-rc.2` / `0.2.1-alpha.2`；alpha.1 仍保留独立归档。 |
-| 插件 | rc.2 / alpha.2 共用 GitHub 包 `0.1.84-latest.0`；[Actions](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml)另提供三版精确匹配的归档，下载需登录 GitHub。 |
+| 插件 | rc.2 / alpha.2 共用 GitHub 包 `0.1.85-latest.0`；[Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.85-latest.0)另提供三版精确匹配的归档，无需登录 GitHub。 |
 | 手机 | 从 [DSHM Releases](https://github.com/KKUCODES/deepseek-harness-mobile/releases) 下载已签名 Android 开发预览；使用前核对配套 DSH 与插件版本。 |
 | 中转 | 手机和电脑都能访问的 DSH Mobile 中转服务。 |
 
 连接 rc.2 需要包含本次兼容更新的手机端；公开 `0.1.0-preview.1` APK 仍仅连接 alpha.2。[当前双版本范围与配套要求](../compatibility/latest-upstream/market-baseline.md)。
 
-插件 `0.1.84-latest.0` 已[公开发布](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.84-latest.0)，三版归档可直接下载，无需登录 GitHub。GitHub 安装也不需要下载 Actions 产物或登录 GitHub，安装细节见 [GitHub 安装说明](./github-install.md)；归档下载与开发产物保留期限见[插件下载说明](./releases.md)。新版本的安装或打包不计作全量手机兼容验收。核心 Remote 的完整本地证据对应 `0.1.80-latest.0`＋官方 DSH `0.2.1-alpha.2`＋原配套 Android；`0.1.81-latest.0` 的[地址修改专项](../compatibility/latest-upstream/gateway-settings.md)另行记录。具体范围见[当前支持清单](../compatibility/latest-upstream/official-support.md)，历史归档安装见[本地安装记录](../compatibility/latest-upstream/official-installation.md)。
+插件 `0.1.85-latest.0` 已[公开发布](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.85-latest.0)，三版归档可直接下载，无需登录 GitHub；完整缓存优化需配套 DSHM `0.1.0-preview.4`。GitHub 安装也不需要下载 Actions 产物或登录 GitHub，安装细节见 [GitHub 安装说明](./github-install.md)；归档下载与开发产物保留期限见[插件下载说明](./releases.md)。新版本的安装或打包不计作全量手机兼容验收。核心 Remote 的完整本地证据对应 `0.1.80-latest.0`＋官方 DSH `0.2.1-alpha.2`＋原配套 Android；`0.1.81-latest.0` 的[地址修改专项](../compatibility/latest-upstream/gateway-settings.md)另行记录。具体范围见[当前支持清单](../compatibility/latest-upstream/official-support.md)，历史归档安装见[本地安装记录](../compatibility/latest-upstream/official-installation.md)。
 
 包名中的 DSH 版本必须与电脑一致，不要混装或直接换成任意更新版本。alpha.1 构建包不沿用 alpha.2 的完整手机验收结论。取得下面示例包仅说明可以开始安装和联调，不代表该下载组合已经完成上述所有验收。
 
@@ -29,7 +29,7 @@ dsh web
 如果你在 DSH 源码目录运行 `pnpm dsh web`，安装命令也加上 `pnpm` 前缀。正式使用优先复制市场给出的固定提交命令。alpha.1 必须下载其对应归档；例如取得匹配 alpha.2 的 `.tgz` 后，也可从 DSH 项目目录执行：
 
 ```powershell
-pnpm dsh plugin --profile web add 'C:\Downloads\dshm-plugin-0.1.84-latest.0-dsh-0.2.1-alpha.2.tgz'
+pnpm dsh plugin --profile web add 'C:\Downloads\dshm-plugin-0.1.85-latest.0-dsh-0.2.1-alpha.2.tgz'
 pnpm dsh web
 ```
 
