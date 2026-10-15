@@ -6,7 +6,7 @@
 
 **DSHM Plugin** runs inside official [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) on your computer, synchronizing workspaces, chat sessions, execution results, and approvals with the [DSHM Android client](https://github.com/KKUCODES/deepseek-harness-mobile/blob/main/README.en.md). Continue conversations and make decisions remotely while the computer executes tasks. No DSH core modifications or rebuilds are required.
 
-[Install from GitHub](#install-the-plugin-and-pair-your-phone) · [Download plugin packages](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.84-latest.0) · [DSH compatibility (Chinese)](./compatibility/latest-upstream/official-support.md) · [FAQ](#faq)
+[Install from GitHub](#install-the-plugin-and-pair-your-phone) · [Download plugin packages](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.85-latest.0) · [DSH compatibility (Chinese)](./compatibility/latest-upstream/official-support.md) · [FAQ](#faq)
 
 <p align="center">
   <img src="./docs/images/logo.png" width="128" height="128" alt="DSHM logo: the DeepSeek whale with a two-way phone and computer connection">
@@ -39,13 +39,13 @@ dsh plugin --profile web add github:KKUCODES/dshm-plugin
 
 `dsh plugin` is the official DSH command. From a DSH source checkout, use `pnpm dsh plugin --profile web add github:KKUCODES/dshm-plugin`. Compiled files are included: installation requires no compiler, adjacent backend checkout, or build-script approval. Prefer the market's command pinned with `#<full-commit-sha>` for a scanned version. [GitHub installation details (Chinese)](./docs/github-install.md)
 
-The default GitHub package, `0.1.84-latest.0`, supports these two specific versions. Alpha.1 still requires its separate `.tgz`. All three archives are publicly available without a GitHub account:
+The default GitHub package, `0.1.85-latest.0`, supports these two specific versions. Alpha.1 still requires its separate `.tgz`. All three archives are publicly available without a GitHub account:
 
 | Computer DSH version | Direct download |
 | --- | --- |
-| `0.2.0-rc.2` | [rc.2 plugin package](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.84-latest.0/dshm-plugin-0.1.84-latest.0-dsh-0.2.0-rc.2.tgz) |
-| `0.2.1-alpha.1` | [alpha.1 plugin package](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.84-latest.0/dshm-plugin-0.1.84-latest.0-dsh-0.2.1-alpha.1.tgz) |
-| `0.2.1-alpha.2` | [alpha.2 plugin package](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.84-latest.0/dshm-plugin-0.1.84-latest.0-dsh-0.2.1-alpha.2.tgz) |
+| `0.2.0-rc.2` | [rc.2 plugin package](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.85-latest.0/dshm-plugin-0.1.85-latest.0-dsh-0.2.0-rc.2.tgz) |
+| `0.2.1-alpha.1` | [alpha.1 plugin package](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.85-latest.0/dshm-plugin-0.1.85-latest.0-dsh-0.2.1-alpha.1.tgz) |
+| `0.2.1-alpha.2` | [alpha.2 plugin package](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.85-latest.0/dshm-plugin-0.1.85-latest.0-dsh-0.2.1-alpha.2.tgz) |
 
 Use [DSHM 0.1.0-preview.2](https://github.com/KKUCODES/deepseek-harness-mobile/releases/download/v0.1.0-preview.2/DSHM-0.1.0-preview.2.apk) for rc.2 / alpha.2; this APK does not connect to alpha.1. The older preview.1 still targets alpha.2 only. [Validation and app requirements (Chinese)](./compatibility/latest-upstream/market-baseline.md) · [Pairing guide (Chinese)](./docs/usage.md)
 
@@ -73,7 +73,7 @@ Canceling or failed verification keeps the original connection. A successful sav
 
 | Scope | Version and validated behavior |
 | --- | --- |
-| GitHub installation | `0.1.84-latest.0` shares one compiled package across official DSH `0.2.0-rc.2` / `0.2.1-alpha.2`. Both passed official installation, settings-page and removal checks. [Evidence (Chinese)](./compatibility/latest-upstream/market-baseline.md) |
+| GitHub installation | `0.1.85-latest.0` shares one compiled package across official DSH `0.2.0-rc.2` / `0.2.1-alpha.2`. Both passed official installation, settings-page and removal checks. [Evidence (Chinese)](./compatibility/latest-upstream/market-baseline.md) |
 | Release downloads | Public, exact-version archives for rc.2, alpha.1 and alpha.2; cloud builds and anonymous download checks passed. [Build guide (Chinese)](./docs/releases.md) |
 | Relay URL changes | [Separate settings-page validation (Chinese)](./compatibility/latest-upstream/gateway-settings.md) with `0.1.81-latest.0`; not a complete Remote rerun. |
 | Core Remote | Official DSH `0.2.1-alpha.2` + plugin `0.1.80-latest.0` + the original matching Android app, validated locally in Web + MuMu. [Support matrix (Chinese)](./compatibility/latest-upstream/official-support.md) |
@@ -86,7 +86,7 @@ The phone does not create computer workspaces, accept manually entered commands,
 
 ### Which plugin package matches my DSH version?
 
-Check computer DSH's version. The default GitHub package supports `0.2.0-rc.2` and `0.2.1-alpha.2`. For `.tgz` downloads, choose the exact matching `dsh-<version>` in the name; for example, `dshm-plugin-0.1.84-latest.0-dsh-0.2.0-rc.2.tgz` targets rc.2. Alpha.1 requires its own archive. Recheck the [compatibility report (Chinese)](./compatibility/latest-upstream/official-support.md) after updating DSH.
+Check computer DSH's version. The default GitHub package supports `0.2.0-rc.2` and `0.2.1-alpha.2`. For `.tgz` downloads, choose the exact matching `dsh-<version>` in the name; for example, `dshm-plugin-0.1.85-latest.0-dsh-0.2.0-rc.2.tgz` targets rc.2. Alpha.1 requires its own archive. Recheck the [compatibility report (Chinese)](./compatibility/latest-upstream/official-support.md) after updating DSH.
 
 ### Does claiming a pairing link immediately allow computer access?
 
@@ -113,6 +113,7 @@ Detailed guides are currently in Chinese:
 
 - [Installation and usage](./docs/usage.md): connection, approval, and revocation.
 - [Development guide](./docs/development.md): dependencies, builds, and versions.
+- [Remote caching (Chinese)](./compatibility/latest-upstream/remote-cache.md): authoritative resource fingerprints and read-only deltas; pair with DSHM 0.1.0-preview.4. The existing relay needs no deployment.
 - [Downloads and releases](./docs/releases.md): Actions packages and release drafts.
 - [GitHub installation and market submission](./docs/github-install.md): official commands, pinned commits, and versions.
 - [Support matrix](./compatibility/latest-upstream/official-support.md): validated and unvalidated scope.

@@ -6,20 +6,20 @@
 
 官方 DSH `0.2.0-rc.2` / `0.2.1-alpha.2` 可共用 GitHub 默认安装包，运行 `dsh plugin --profile web add github:KKUCODES/dshm-plugin`，无需下载归档或在用户电脑上编译。[GitHub 安装与固定提交](./github-install.md)说明当前版本、源码启动前缀和市场投稿方式。
 
-从 [0.1.84 公开 Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.84-latest.0) 下载与电脑 DSH 版本一致的 `.tgz`，无需登录 GitHub。首页提供三版[直接下载链接](../README.md#安装插件并配对手机)。
+从 [0.1.85 Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.85-latest.0) 下载与电脑 DSH 版本一致的 `.tgz`，无需登录 GitHub。首页提供三版[直接下载链接](../README.md#安装插件并配对手机)。完整缓存优化配套使用 [DSHM 0.1.0-preview.4](https://github.com/KKUCODES/deepseek-harness-mobile/releases/tag/v0.1.0-preview.4)，现有中转服务无需升级。
 
 开发构建也可从 [Build plugin packages](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) 的成功构建中下载 Artifacts；此入口需要登录 GitHub，产物保留 30 天。
 
 每轮分别生成官方 DSH `0.2.0-rc.2`、`0.2.1-alpha.1` 和 `0.2.1-alpha.2` 的 `.tgz`、SHA-256 与兼容元数据；这些归档的 peer 精确固定，不能混装。构建通过不代表所有手机、模型和插件已兼容。
 
-工作流创建未发布草稿，维护者检查后再公开发布；草稿不对普通用户开放。`0.1.84-latest.0` 已完成此流程，三个插件包、校验文件与兼容信息均可公开下载。
+工作流创建未发布草稿，维护者检查后再公开发布；草稿不对普通用户开放。历史 `0.1.84-latest.0` 的三个插件包、校验文件与兼容信息保持，不覆盖旧附件。
 
 ## 运行与发版
 
 - 普通 `main` 提交与 PR 自动打包，不创建 Release。
 - GitHub 默认安装从 `main` 的 `lib/` 读取预编译产物；源码或发布输入变化后运行 `npm run build:github` 并一起提交。alpha.2 构建作业会重新编译、逐文件比较，拒绝源码与安装产物不一致。
 - Actions → Build plugin packages → Run workflow 手动打包；勾选 `release_draft` 时创建预发布草稿。
-- 发版前修改 [ci/release.json](../ci/release.json) 的版本，再推送对应 `v<version>` 标签。标签必须与配置一致。
+- 发版前同步 [ci/release.json](../ci/release.json)、包清单与锁文件的版本，并提供 `ci/release-notes/<版本>.md`。工作流按该提交读取发行说明；先推送主分支，再推送对应 `v<version>` 标签，标签必须与配置一致。
 - 已公开的 Release 不覆盖；同一提交的草稿可以重跑更新。下一次版本使用新版本号。
 
 ## 构建来源

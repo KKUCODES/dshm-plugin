@@ -5,6 +5,8 @@ import type { ClientModuleRegistry } from '@deepseek-ai/dsh-client-modules'
 import { REMOTE_TRANSPORT_VERSION, routedFrameSchema, remoteEndpoints, remotePermission, remoteRequestAllowed,
   RESOURCE_CHUNK_BYTES, RESOURCE_WINDOW, MAX_UPLOAD_BYTES, MAX_FRAME_BYTES, type HostFrame, type RemoteContext } from '@dsh-mobile/protocol'
 import { ResourceWindow } from './resource-window.js'
+import { RemoteSyncCache } from './sync-cache.js'
+import { ResourceValidator } from './resource-validator.js'
 import { UploadBody } from './upload-body.js'
 import { streamOffice } from './office-preview.js'
 import { streamAttachment, type AttachmentServices } from './attachment-preview.js'
@@ -83,6 +85,8 @@ export class RemoteAdapter {
   private readonly modelProbe: ModelProbe
   private readonly eventOwners = new Map<string, string>()
   private readonly resources = new Map<string, ResourceWindow>()
+  private readonly syncCache = new RemoteSyncCache()
+  private readonly resourceValidator = new ResourceValidator()
   private readonly uploads = new Map<string, UploadBody>()
   private officeReaders = 0
   private attachmentReaders = 0
@@ -212,6 +216,7 @@ export class RemoteAdapter {
           taskNotifications: !!this.services.taskNotifications,
           taskNotificationPreview: this.services.taskNotifications ? 1 : undefined,
           taskPendingNotifications: this.services.taskNotifications?.pendingAvailable === true,
+          syncCacheVersion: 1,
           endpoints: remoteEndpoints(context.management, this.cordis.available,
             latestCandidate && isProfileDshVersion(this.services.version) ? 'target' : 'legacy',
             this.services.version === '0.2.1-alpha.2'), graphRevision: this.services.modules.graph().rev } })
@@ -419,7 +424,8 @@ export class RemoteAdapter {
         const url = new URL(operation.path, 'http://dsh.internal')
         if (!operation.path.startsWith('/plugins/') || url.origin !== 'http://dsh.internal' || url.hash
           || `${url.pathname}${url.search}` !== operation.path || operation.path.includes('\\')) throw new Error('remote_resource_denied')
-        const response = await this.services.modules.fetchBundle(new Request(url, { method: operation.verb, signal }))
+        const response = await this.resourceValidator.fetch(new Request(url, { method: operation.verb, signal }),
+          this.services.modules.graph().rev, request => this.services.modules.fetchBundle(request))
         const headers: Record<string, string> = {}
         for (const name of ['content-type', 'content-length', 'content-range', 'etag', 'accept-ranges']) {
           const value = response.headers.get(name); if (value !== null) headers[name] = value
@@ -464,6 +470,9 @@ export class RemoteAdapter {
         emit({ type: 'end', id: frame.id })
       } else if (operation.method === 'remote.rpc' || operation.method === 'remote.stream') {
         const stream = operation.method === 'remote.stream'
+        const sync = this.syncCache.prepare(JSON.stringify([context.hostId, context.deviceId, context.management, this.services.version]),
+          operation.endpoint, stream, operation.payload)
+        operation.payload = sync.payload
         const permission = remotePermission(operation.endpoint, stream)
         const fileContract = latestCandidate && isProfileDshVersion(this.services.version) ? 'target' : 'legacy'
         if (!permission || !remoteRequestAllowed(operation.endpoint, operation.payload, fileContract)) throw new Error('remote_operation_denied')
@@ -479,6 +488,7 @@ export class RemoteAdapter {
         }
         if (stream) {
           const source = await openGatewayStream(this.services.gateway, this.services.version, operation.endpoint, operation.payload, signal)
+          let opening = true
           for await (const value of source) {
             if (signal.aborted) break
             if (operation.endpoint === '$events') {
@@ -490,7 +500,9 @@ export class RemoteAdapter {
                 releaseCordis = this.cordis.attach(owner(context))
               }
             }
-            emit({ type: 'event', id: frame.id, value })
+            const baseline = opening && ['baseline', 'snapshot'].includes(String(record(value)?.type))
+            opening = false
+            emit({ type: 'event', id: frame.id, value: baseline ? await sync.encode(value) : value })
           }
           emit({ type: 'end', id: frame.id })
         } else {
@@ -518,7 +530,7 @@ export class RemoteAdapter {
               code: 'workspace-file/too-large', message: 'The encoded file page exceeds the remote response size limit.',
               details: { path: record(operation.payload.args)?.path, limit: MAX_FRAME_BYTES },
             } } })
-          } else emit(result)
+          } else emit({ ...result, value: record(envelope.result)?.ok === true ? await sync.encode(envelope.result) : envelope.result })
         }
       } else throw new Error('remote_operation_denied')
     } catch (error) {

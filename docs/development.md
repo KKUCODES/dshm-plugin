@@ -29,7 +29,7 @@ artifacts/            本地产物与验收证据，不提交 Git
 
 | 入口 | 用途与边界 |
 | --- | --- |
-| 根目录 `package.json` 的运行入口 | 版本 `0.1.84-latest.0`，`main` / `exports` 指向提交的 `lib/`，明确支持 DSH rc.2 与 alpha.2，不接受范围内任意其他预发布。不运行 Git 安装生命周期脚本。 |
+| 根目录 `package.json` 的运行入口 | 版本 `0.1.85-latest.0`，`main` / `exports` 指向提交的 `lib/`，明确支持 DSH rc.2 与 alpha.2，不接受范围内任意其他预发布。不运行 Git 安装生命周期脚本。 |
 | 根目录开发依赖、`build` / `typecheck` / `test` | 保留 DSH `0.1.6-alpha.2` 旧版源代码回归环境，只生成忽略的 `dist/`。开发依赖与新的运行 peer 版本不同，安装维护依赖时使用 `--legacy-peer-deps`；发布构建仍使用单独固定的 SDK。 |
 | `build:github` / `check:github` | 构建或检查当前 GitHub 安装 `lib/`；源码摘要与逐文件摘要随产物记录，CI 重新构建比较。 |
 | `prepare:ci` / `build:ci` | 按 `ci/release.json` 版本与所选固定 SDK 生成 rc.2 / alpha.1 / alpha.2 独立 `.tgz`，不覆盖 `lib/`。 |

@@ -1,5 +1,7 @@
 # 插件知识总目录
 
+Remote 缓存：[原模块资源指纹、只读基线差量及手机配套范围](../../compatibility/latest-upstream/remote-cache.md)。本地候选已验，尚未公开发布；原中转无需部署升级。
+
 [市场基线双版本验证](../../compatibility/latest-upstream/market-baseline.md)：官方 rc.2 与 alpha.2 共用 `0.1.84` Git 包，三版独立归档，真实协议/模型/审批与配套手机版本边界。只修改插件和 DSHM，不修改 DSH。
 
 GitHub 安装与投稿：[官方一条命令、默认分支预编译产物与固定提交](../github-install.md)；[独立 Git 与官方 alpha.2 安装记录](../../compatibility/latest-upstream/github-install.md)。安装专项不代替完整 Remote 兼容验收。

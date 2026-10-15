@@ -2101,5 +2101,7 @@ export declare const hostFrameSchema: z.ZodDiscriminatedUnion<[z.ZodObject<{
 }, z.core.$strict>], "type">;
 export type HostFrame = z.infer<typeof hostFrameSchema>;
 export declare const isStream: (operation: Operation) => boolean;
+export { SYNC_CACHE_FIELD, SYNC_CACHE_LIMIT, syncCacheEndpoint, syncHash, syncDelta, applySyncDelta } from './sync-cache.js';
+export type { SyncHint, SyncEnvelope } from './sync-cache.js';
 export declare const tokenSchema: z.ZodString;
 export declare const labelSchema: z.ZodString;

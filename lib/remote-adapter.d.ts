@@ -56,6 +56,8 @@ export declare class RemoteAdapter {
     private readonly modelProbe;
     private readonly eventOwners;
     private readonly resources;
+    private readonly syncCache;
+    private readonly resourceValidator;
     private readonly uploads;
     private officeReaders;
     private attachmentReaders;

@@ -108,15 +108,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           version=$(node -p "require('./ci/release.json').version")
-          cat > release-files/RELEASE-NOTES.md <<'NOTES'
-          DSHM plugin development candidate. Choose the archive matching your official DSH version exactly.
-
-          - DSH 0.2.0-rc.2, 0.2.1-alpha.1 and 0.2.1-alpha.2 have separate archive packages.
-          - The default GitHub package supports both 0.2.0-rc.2 and 0.2.1-alpha.2.
-          - Install through the official DSH plugin command; no core patches are included.
-          - CI packaging is verified separately from real Android and full compatibility validation.
-          - SHA-256 and compatibility metadata are included.
-          NOTES
+          cp "ci/release-notes/$version.md" release-files/RELEASE-NOTES.md
           tag="v$version"
           if gh release view "$tag" --json isDraft,targetCommitish > release-state.json 2>/dev/null; then
             node -e 'const r=require("./release-state.json"); if (!r.isDraft || r.targetCommitish !== process.env.GITHUB_SHA) throw Error("Only a draft for the same commit can be updated")'
