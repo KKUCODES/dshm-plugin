@@ -1,6 +1,6 @@
 # 插件知识总目录
 
-长聊天修复：[通用分块发送、背压、协商与配套发布](../../compatibility/latest-upstream/response-chunks.md)。0.1.87与App preview.7已公开预发布，四版云端构建与12附件匿名核验通过；公共中转升级尚待登录信息，未混入插件适配分支，不修改DSH本体。
+长聊天修复：[通用分块发送、背压、协商与配套发布](../../compatibility/latest-upstream/response-chunks.md)。0.1.87与App preview.7已公开预发布，四版云端构建与12附件匿名核验通过；公共中转已升级并通过公网传输及旧端兼容，未混入插件适配分支，不修改DSH本体。
 
 DSH rc.2 独立修复：[范围、真实服务能力、原Peer和官方SDK类型限制](../../compatibility/latest-upstream/dsh-rc21-compatibility.md)。0.1.86已公开预发布，配套App preview.6；四版云端构建与12附件匿名下载核验通过。
 

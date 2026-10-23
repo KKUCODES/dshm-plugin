@@ -1,6 +1,6 @@
 # 通用大响应分块
 
-状态：2026-10-23，本地验收完成，0.1.87与App preview.7已公开发布，[四版云端构建及匿名下载核验](../../docs/releases.md#已核验范围)通过；公共中转升级尚待登录信息。实现：[KKC-75](https://linear.app/kkcodes/issue/KKC-75)；发行：[KKC-76](https://linear.app/kkcodes/issue/KKC-76)。独立 `fix/remote-response-chunks` 分支不混入插件适配分支，不修改 DSH。
+状态：2026-10-23，本地验收完成，0.1.87与App preview.7已公开发布，[四版云端构建及匿名下载核验](../../docs/releases.md#已核验范围)通过；公共中转已升级并通过公网分块、重连和旧端兼容。实现：[KKC-75](https://linear.app/kkcodes/issue/KKC-75)；发行：[KKC-76](https://linear.app/kkcodes/issue/KKC-76)。独立 `fix/remote-response-chunks` 分支不混入插件适配分支，不修改 DSH。
 
 `ResponseWriter` 包住原 Relay 响应：最终帧不超过2 MiB时保持原样；已协商的大 `result/event` 把完整 `value` 序列化为UTF-8，64 KiB分块，四块确认窗口。原适配器等待发送完成后再读取下一项，保持顺序与背压；所有块确认后才发逻辑结束。超限、超时、取消及断线清理窗口、队列与原官方订阅。
 
