@@ -29,6 +29,7 @@ export interface RemoteServices {
     gateway: Pick<TypertGateway, 'wireStream'>;
     modules: Pick<ClientModuleRegistry, 'graph' | 'onGraphChanged' | 'fetchBundle'>;
     version: string;
+    scheduleCatalog?: () => boolean;
     attachments?: AttachmentServices;
     attachmentOffice?: () => AttachmentOfficeProvider | undefined;
     jobControl?: () => (Pick<JobControl, 'generation' | 'stop'> & Partial<Pick<JobControl, 'output' | 'outputAvailable' | 'outputCoordinates'>>) | undefined;

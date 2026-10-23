@@ -1,4 +1,5 @@
 import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
+import { connectionFetch } from './connection-fetch.js'
 import type { Operation } from '@dsh-mobile/protocol'
 
 type DesktopOperation = Extract<Operation, { method: 'remote.desktop' | 'remote.openFile' }>
@@ -13,7 +14,7 @@ export async function desktopOpen(connection: Pick<HostConnectionHandle, 'create
       sessionId: operation.sessionId, seq: String(operation.seq), index: String(operation.index),
       ...(operation.action === 'reveal' ? { action: 'reveal' } : {}),
     })}`
-  const response = await connection.createSharedFetchHandler('/api').fetch(new Request(`http://dsh.internal${path}`, {
+  const response = await connectionFetch(connection, new Request(`http://dsh.internal${path}`, {
     method: metadata ? 'GET' : 'POST', signal,
   }))
   signal.throwIfAborted()

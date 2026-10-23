@@ -5,6 +5,7 @@ import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-api-session-controller'
 import type {} from '@deepseek-ai/dsh-credentials'
 import type {} from '@deepseek-ai/dsh-api-gateway/types'
+import type {} from '@deepseek-ai/dsh-typert-registry'
 import type {} from '@deepseek-ai/dsh-client-modules'
 import type {} from '@deepseek-ai/dsh-attachment'
 import type {} from '@deepseek-ai/dsh-office-to-pdf'
@@ -88,6 +89,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   ctx.on('credentials/reference-updated', () => { credentialRevision++ })
   const management = new Management(ctx.credentials, ctx.sessionController, config, {
     connection: ctx.connection, gateway: ctx.typertGateway, modules: ctx.clientModules,
+    scheduleCatalog: () => !!ctx.get('typert')?.local.get('schedule/list'),
     attachments: { sessions: ctx.sessionController, store: ctx.attachments },
     attachmentOffice: () => ctx.get('officeToPdf'),
     jobControl: () => jobControl,

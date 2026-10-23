@@ -15,6 +15,6 @@ for (const file of ['package.json', 'package-lock.json']) {
 }
 // 安装官方已发布包，禁止执行 SDK 安装脚本或构建 DSH 本体。
 const install = spawnSync(process.execPath, [process.env.npm_execpath, 'ci', '--ignore-scripts',
-  ...(version === '0.2.1-alpha.1' ? ['--legacy-peer-deps'] : []), '--no-audit', '--no-fund'],
+  ...(['0.2.1-alpha.1', '0.2.1-rc.2'].includes(version) ? ['--legacy-peer-deps'] : []), '--no-audit', '--no-fund'],
   { cwd: runtime, stdio: 'inherit', windowsHide: true });
 assert.equal(install.status, 0, 'CI SDK installation failed');

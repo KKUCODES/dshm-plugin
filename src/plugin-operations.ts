@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
+import { connectionFetch } from './connection-fetch.js'
 import { MAX_FRAME_BYTES, remotePermission, remoteRequestAllowed } from '@dsh-mobile/protocol'
 
 const endpoints = new Set(['pluginManager/installBundle', 'pluginManager/removeBundle', 'pluginManager/setBundleEnabled', 'pluginManager/setPluginEnabled'])
@@ -58,7 +59,7 @@ export class PluginOperations {
   private async execute(entry: Entry, payload: Record<string, unknown>) {
     try {
       // 不使用读取连接的 AbortSignal。安装交给原 manager 后须通过 cancelInstall 显式取消。
-      const response = await this.connection.createSharedFetchHandler('/api').fetch(new Request(`http://dsh.internal/api/${entry.endpoint}`, {
+      const response = await connectionFetch(this.connection, new Request(`http://dsh.internal/api/${entry.endpoint}`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ type: 'client-request', rpcId: entry.id, method: entry.endpoint, payload }),
       }))

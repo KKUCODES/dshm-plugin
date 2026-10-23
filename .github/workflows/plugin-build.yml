@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dsh: ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2']
+        dsh: ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.2.1-rc.2']
     env:
       DSHM_DSH_VERSION: ${{ matrix.dsh }}
     defaults:
@@ -63,11 +63,13 @@ jobs:
         run: |
           npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund
           npm run prepare:ci
+          if [ "$DSHM_DSH_VERSION" = "0.2.1-rc.2" ]; then DSHM_DSH_VERSION=0.2.1-alpha.2 npm run prepare:ci; fi
           npm run build:ci
       - name: Verify committed GitHub install package
         if: matrix.dsh == '0.2.1-alpha.2'
         run: |
           DSHM_DSH_VERSION=0.2.0-rc.2 npm run prepare:ci
+          DSHM_DSH_VERSION=0.2.1-rc.2 npm run prepare:ci
           npm run test:compat
           npm run test:github
           npm run build:github -- --check

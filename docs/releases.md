@@ -4,13 +4,13 @@
 
 ## 下载插件
 
-官方 DSH `0.2.0-rc.2` / `0.2.1-alpha.2` 可共用 GitHub 默认安装包，运行 `dsh plugin --profile web add github:KKUCODES/dshm-plugin`，无需下载归档或在用户电脑上编译。[GitHub 安装与固定提交](./github-install.md)说明当前版本、源码启动前缀和市场投稿方式。
+官方 DSH `0.2.0-rc.2` / `0.2.1-alpha.2` / `0.2.1-rc.2` 可共用 GitHub 默认安装包，运行 `dsh plugin --profile web add github:KKUCODES/dshm-plugin`，无需下载归档或在用户电脑上编译。[GitHub 安装与固定提交](./github-install.md)说明当前版本、源码启动前缀和市场投稿方式。
 
-从 [0.1.85 Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.85-latest.0) 下载与电脑 DSH 版本一致的 `.tgz`，无需登录 GitHub。首页提供三版[直接下载链接](../README.md#安装插件并配对手机)。完整缓存优化配套使用 [DSHM 0.1.0-preview.4](https://github.com/KKUCODES/deepseek-harness-mobile/releases/tag/v0.1.0-preview.4)，现有中转服务无需升级。
+从 [0.1.86 Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.86-latest.0) 下载与电脑 DSH 版本一致的 `.tgz`，无需登录 GitHub。首页提供四版[直接下载链接](../README.md#安装插件并配对手机)。本次兼容修复配套使用 [DSHM 0.1.0-preview.6](https://github.com/KKUCODES/deepseek-harness-mobile/releases/tag/v0.1.0-preview.6)，现有中转服务无需升级。
 
 开发构建也可从 [Build plugin packages](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) 的成功构建中下载 Artifacts；此入口需要登录 GitHub，产物保留 30 天。
 
-每轮分别生成官方 DSH `0.2.0-rc.2`、`0.2.1-alpha.1` 和 `0.2.1-alpha.2` 的 `.tgz`、SHA-256 与兼容元数据；这些归档的 peer 精确固定，不能混装。构建通过不代表所有手机、模型和插件已兼容。
+每轮分别生成官方 DSH `0.2.0-rc.2`、`0.2.1-alpha.1` 、`0.2.1-alpha.2` 和 `0.2.1-rc.2` 的 `.tgz`、SHA-256 与兼容元数据；alpha.1 保留独立 peer，其余采用兼容范围；仍按对应版本选择归档。构建通过不代表所有手机、模型和插件已兼容。
 
 工作流创建未发布草稿，维护者检查后再公开发布；草稿不对普通用户开放。历史 `0.1.84-latest.0` 的三个插件包、校验文件与兼容信息保持，不覆盖旧附件。
 
@@ -24,7 +24,7 @@
 
 ## 构建来源
 
-GitHub 托管的 Ubuntu 24.04 + Node.js 24。后端协议从固定提交取得并只构建协议，三个官方 SDK 由本仓库的锁文件安装；使用 `npm ci --ignore-scripts`，不构建或修改 DSH 本体和 SDK。rc.2 和 alpha.2 的锁文件包含官方 CLI 声明的 peer，供实际 Web 启动验证使用；alpha.1 保持历史类型构建环境。
+GitHub 托管的 Ubuntu 24.04 + Node.js 24。后端协议从固定提交取得并只构建协议，四个官方 SDK 由本仓库的锁文件安装；使用 `npm ci --ignore-scripts`，不构建或修改 DSH 本体和 SDK。0.2.0-rc.2、alpha.2 和 0.2.1-rc.2 的锁文件包含官方 CLI 声明的 peer，供实际 Web 启动验证使用；alpha.1 保持历史类型构建环境。
 
 本地已有环境与历史候选入口保持。CI 入口为 `npm run prepare:ci` 和 `npm run build:ci`，分别准备隔离 SDK 和生成归档；工作流还会先准备相邻 `backend/`。归档位于被忽略的 `artifacts/ci/`，SDK 配置与锁文件位于 `ci/sdk/`。`npm run build:github` 单独生成需提交的 `lib/`，不覆盖历史 `dist/` 开发输出。
 

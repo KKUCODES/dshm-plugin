@@ -10,7 +10,7 @@ export async function githubSourceDigest(root) {
   const inputs = ['package.json', 'cordis.patch.yml', 'ci/release.json',
     'scripts/build-github-package.mjs', 'scripts/build-latest-candidate.mjs',
     'scripts/github-package.mjs', 'scripts/dsh-versions.mjs',
-    ...['rc2', 'alpha2'].flatMap(variant => [`ci/sdk/${variant}/package.json`, `ci/sdk/${variant}/package-lock.json`])];
+    ...['rc2', 'alpha2', 'rc21'].flatMap(variant => [`ci/sdk/${variant}/package.json`, `ci/sdk/${variant}/package-lock.json`])];
   async function collect(relative) {
     for (const entry of (await readdir(join(root, relative), { withFileTypes: true })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)) {
       const path = `${relative}/${entry.name}`;

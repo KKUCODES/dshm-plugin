@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { cp, mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, relative as relativePath, resolve } from 'node:path';
 import { build } from 'esbuild';
+import semver from 'semver';
 import { buildLatestCandidate } from './build-latest-candidate.mjs';
 import { githubDshVersion, githubSourceDigest, validateGithubPackage } from './github-package.mjs';
 import { githubDshVersions, githubPeerRange, sdkVariant } from './dsh-versions.mjs';
@@ -17,14 +18,15 @@ assert.equal(manifest.version, release.version);
 const built = await buildLatestCandidate('candidate', {
   targetVersion: githubDshVersion, candidateVersion: release.version, sdkRoot,
 });
-// 同一源码分别通过两版官方 SDK 的类型检查，运行产物仍只有一份。
+// 保留旧版SDK类型检查并构建各版运行候选；rc.2声明缺失的限制见候选构建器。
 for (const version of githubDshVersions) {
   const candidate = version === githubDshVersion ? built : await buildLatestCandidate('candidate', {
     targetVersion: version, candidateVersion: release.version, sdkRoot: resolve(root, 'artifacts/ci/sdk', sdkVariant(version)),
   });
-  for (const [name, peerVersion] of Object.entries(candidate.manifest.peerDependencies)) {
+  for (const name of Object.keys(candidate.manifest.peerDependencies)) {
+    const peerVersion = JSON.parse(await readFile(resolve(root, 'artifacts/ci/sdk', sdkVariant(version), 'node_modules', name, 'package.json'), 'utf8')).version;
     assert.equal(manifest.peerDependencies[name], githubPeerRange(name), `Unexpected GitHub peer range: ${name}`);
-    assert.ok(manifest.peerDependencies[name].split(' || ').includes(peerVersion), `SDK peer is not covered: ${name}@${peerVersion}`);
+    assert.ok(semver.satisfies(peerVersion, manifest.peerDependencies[name]), `SDK peer is not covered: ${name}@${peerVersion}`);
   }
 }
 const buildRoot = resolve(root, 'artifacts/github-package-build');
@@ -49,8 +51,13 @@ await copyDeclarations();
 // 运行代码已打包协议；声明也携带同一协议的类型，避免公开包引用私有开发依赖。
 const protocolTypes = join(root, 'node_modules/@dsh-mobile/protocol/dist');
 await mkdir(join(output, 'protocol'), { recursive: true });
+// 协议是显式工作区开发依赖；切换分支后dist可能保留已删除源码的旧声明。
+const protocolSources = join(root, 'node_modules/@dsh-mobile/protocol/src');
+await access(protocolSources);
 for (const entry of await readdir(protocolTypes, { withFileTypes: true })) {
   if (!entry.isFile() || !entry.name.endsWith('.d.ts')) continue;
+  try { await access(join(protocolSources, entry.name.replace(/\.d\.ts$/, '.ts'))); }
+  catch (error) { if (error.code === 'ENOENT') continue; throw error; }
   const text = (await readFile(join(protocolTypes, entry.name), 'utf8')).replace(/\r\n/g, '\n');
   await writeFile(join(output, 'protocol', entry.name), text);
 }

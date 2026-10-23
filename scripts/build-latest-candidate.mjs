@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { cp, mkdir, mkdtemp, readFile, writeFile, copyFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { sdkVariant } from './dsh-versions.mjs';
+import { sdkVariant, githubPeerRange } from './dsh-versions.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const runtime = resolve(root, 'artifacts/latest-runtime-check');
@@ -20,7 +20,10 @@ const runtime = sdkRoot ?? (targetVersion === '0.2.0-rc.2'
 const version = targetVersion;
 assert.match(relativeTarget, /^candidate(?:-package-check-[A-Za-z0-9]+\/package)?$/);
 const target = resolve(runtime, relativeTarget);
-const snapshot = await mkdtemp(resolve(runtime, 'candidate-build-'));
+// rc.2官方包缺少部分types.d.ts；自有适配器以保留支持的alpha.2公共类型面编译，
+// 运行仍使用rc.2原包及真实能力验证，不写入/补造官方SDK声明。
+const declarationRoot = targetVersion === '0.2.1-rc.2' ? resolve(root, 'artifacts/ci/sdk/alpha2') : runtime;
+const snapshot = await mkdtemp(resolve(declarationRoot, 'candidate-build-'));
 await cp(resolve(root, 'src'), resolve(snapshot, 'src'), { recursive: true });
 await writeFile(resolve(snapshot, 'tsconfig.json'), JSON.stringify({ extends: resolve(root, 'tsconfig.json'),
   compilerOptions: { rootDir: 'src', outDir: resolve(target, 'dist'), noEmit: false, emitDeclarationOnly: true, sourceMap: false },
@@ -46,7 +49,7 @@ for (const name of ['@deepseek-ai/dsh-config-editor', '@deepseek-ai/dsh-app-boot
 for (const name of Object.keys(manifest.peerDependencies)) {
   const peer = JSON.parse(await readFile(resolve(runtime, 'node_modules', name, 'package.json'), 'utf8'));
   if (name.startsWith('@deepseek-ai/dsh-') && peer.version !== version) throw Error(`Unexpected candidate peer version: ${name}`);
-  manifest.peerDependencies[name] = peer.version;
+  manifest.peerDependencies[name] = targetVersion === '0.2.1-alpha.1' ? peer.version : githubPeerRange(name);
 }
 await mkdir(resolve(target, 'dist'), { recursive: true });
 manifest.files = ['dist/**/*.js', 'dist/**/*.js.map', 'dist/**/*.d.ts', 'cordis.patch.yml', 'LICENSE', 'README.md'];

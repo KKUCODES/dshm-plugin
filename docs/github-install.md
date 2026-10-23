@@ -4,7 +4,7 @@
 
 ## 安装
 
-当前仓库默认安装包为 `0.1.85-latest.0`，共用一份运行产物支持官方 DSH **`0.2.0-rc.2` / `0.2.1-alpha.2`**。准备 Git、pnpm 和 Node.js 24；先确认电脑 DSH 版本，再运行：
+当前仓库默认安装包为 `0.1.86-latest.0`，共用一份运行产物支持官方 DSH **`0.2.0-rc.2` / `0.2.1-alpha.2` / `0.2.1-rc.2`**。准备 Git、pnpm 和 Node.js 24；先确认电脑 DSH 版本，再运行：
 
 ```sh
 dsh plugin --profile web add github:KKUCODES/dshm-plugin
@@ -64,7 +64,7 @@ https://github.com/KKUCODES/dshm-plugin
 
 ## 维护者更新
 
-`lib/` 是正式 GitHub 安装入口，`dist/` 是历史开发输出，两者不能替换使用。修改源码或宿主版本后，更新 `package.json` 与 `ci/release.json` 的版本、准备 rc.2 和 alpha.2 两套固定 SDK 及共享协议，再执行：
+`lib/` 是正式 GitHub 安装入口，`dist/` 是历史开发输出，两者不能替换使用。修改源码或宿主版本后，更新 `package.json` 与 `ci/release.json` 的版本、准备 0.2.0-rc.2、alpha.2 和 0.2.1-rc.2 三套固定 SDK 及共享协议，再执行：
 
 ```sh
 npm run build:github

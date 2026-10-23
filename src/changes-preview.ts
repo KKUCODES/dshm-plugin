@@ -1,4 +1,5 @@
 import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
+import { connectionFetch } from './connection-fetch.js'
 import { MAX_CHANGES_BYTES, RESOURCE_CHUNK_BYTES, type HostFrame, type Operation } from '@dsh-mobile/protocol'
 import type { ResourceWindow } from './resource-window.js'
 
@@ -10,7 +11,7 @@ export async function streamChanges(connection: Pick<HostConnectionHandle, 'crea
   url.searchParams.set('sessionId', operation.sessionId)
   url.searchParams.set('seq', String(operation.seq))
   if (operation.index !== undefined) url.searchParams.set('index', String(operation.index))
-  const response = await connection.createSharedFetchHandler('/api').fetch(new Request(url, { signal }))
+  const response = await connectionFetch(connection, new Request(url, { signal }))
   if (!response.ok) {
     await response.body?.cancel()
     throw new Error(response.status === 404 ? 'remote_changes_missing' : 'remote_changes_failed')

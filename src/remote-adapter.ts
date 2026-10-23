@@ -1,4 +1,6 @@
 import { isProfileDshVersion } from './profile-dsh-version.js'
+import { assertRemoteServices } from './remote-capabilities.js'
+import { connectionFetch } from './connection-fetch.js'
 import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
 import type { TypertGateway } from '@deepseek-ai/dsh-api-gateway/types'
 import type { ClientModuleRegistry } from '@deepseek-ai/dsh-client-modules'
@@ -52,6 +54,7 @@ export interface RemoteServices {
   gateway: Pick<TypertGateway, 'wireStream'>
   modules: Pick<ClientModuleRegistry, 'graph' | 'onGraphChanged' | 'fetchBundle'>
   version: string
+  scheduleCatalog?: () => boolean
   attachments?: AttachmentServices
   attachmentOffice?: () => AttachmentOfficeProvider | undefined
   jobControl?: () => (Pick<JobControl, 'generation' | 'stop'> & Partial<Pick<JobControl, 'output' | 'outputAvailable' | 'outputCoordinates'>>) | undefined
@@ -165,6 +168,7 @@ export class RemoteAdapter {
       if (!context || context.hostId !== this.hostId) throw new Error('remote_identity_denied')
       if (this.services.version !== '0.1.6-alpha.2' && !(latestCandidate && isProfileDshVersion(this.services.version))) throw new Error('unsupported_dsh_version')
       if (operation.method === 'remote.negotiate') {
+        if (isProfileDshVersion(this.services.version)) assertRemoteServices(this.services)
         emit({ type: 'result', id: frame.id, value: { transport: REMOTE_TRANSPORT_VERSION, dshVersion: this.services.version,
           management: context.management, channels: ['rpc', 'stream', 'graph', 'bundle', 'upload', 'prompt', 'office', 'changes', ...(this.services.attachments ? ['attachment'] : []), ...(this.services.attachments && this.services.attachmentOffice?.() ? ['attachmentOffice'] : [])],
           limits: { uploadBytes: MAX_UPLOAD_BYTES, chunkBytes: RESOURCE_CHUNK_BYTES, window: RESOURCE_WINDOW },
@@ -219,7 +223,7 @@ export class RemoteAdapter {
           syncCacheVersion: 1,
           endpoints: remoteEndpoints(context.management, this.cordis.available,
             latestCandidate && isProfileDshVersion(this.services.version) ? 'target' : 'legacy',
-            this.services.version === '0.2.1-alpha.2'), graphRevision: this.services.modules.graph().rev } })
+            this.services.scheduleCatalog?.() === true), graphRevision: this.services.modules.graph().rev } })
       } else if (operation.method === 'remote.presetManagementRead' || operation.method === 'remote.presetCopy' || operation.method === 'remote.presetDelete') {
         if (!context.management) throw Error('management_required')
         if (!latestCandidate || !isProfileDshVersion(this.services.version) || !this.services.presetManagement) throw Error('remote_operation_denied')
@@ -398,7 +402,7 @@ export class RemoteAdapter {
           const init: RequestInit & { duplex: 'half' } = { method: 'POST', signal, body: upload.body,
             headers: { 'content-type': 'application/json' }, duplex: 'half' }
           const endpoint = operation.endpoint ?? 'session/prompt'
-          const response = await this.services.connection.createSharedFetchHandler('/api').fetch(new Request(`http://dsh.internal/api/${endpoint}`, init))
+          const response = await connectionFetch(this.services.connection, new Request(`http://dsh.internal/api/${endpoint}`, init))
           if (!response.ok) { await response.body?.cancel(); throw new Error(`remote_http_${response.status}`) }
           const envelope = record(await response.json())
           if (envelope?.type !== 'server-response' || envelope.rpcId !== operation.rpcId || !record(envelope.result)) throw new Error('invalid_remote_response')
@@ -414,7 +418,7 @@ export class RemoteAdapter {
         // 固定的原文件入口，Host 仍负责会话解析、附件校验及 receipt 归属。
         const init: RequestInit & { duplex: 'half' } = { method: 'POST', signal, body: upload.body,
           headers: { 'content-type': 'application/octet-stream' }, duplex: 'half' }
-        const response = await this.services.connection.createSharedFetchHandler('/api').fetch(new Request(url, init))
+        const response = await connectionFetch(this.services.connection, new Request(url, init))
         if (!response.ok) { await response.body?.cancel(); throw new Error(`remote_http_${response.status}`) }
         const result = record(await response.json())
         if (typeof result?.ok !== 'boolean') throw new Error('invalid_remote_response')
@@ -476,7 +480,7 @@ export class RemoteAdapter {
         const permission = remotePermission(operation.endpoint, stream)
         const fileContract = latestCandidate && isProfileDshVersion(this.services.version) ? 'target' : 'legacy'
         if (!permission || !remoteRequestAllowed(operation.endpoint, operation.payload, fileContract)) throw new Error('remote_operation_denied')
-        if (operation.endpoint === 'schedule/list' && this.services.version !== '0.2.1-alpha.2') throw new Error('remote_operation_denied')
+        if (operation.endpoint === 'schedule/list' && this.services.scheduleCatalog?.() !== true) throw new Error('remote_operation_denied')
         if (permission === 'management' && !context.management) throw new Error('management_required')
         if (operation.endpoint === 'settings/openAgentPresetDirectory') {
           const id = record(operation.payload.args)?.agentPreset as string
@@ -487,7 +491,7 @@ export class RemoteAdapter {
           return
         }
         if (stream) {
-          const source = await openGatewayStream(this.services.gateway, this.services.version, operation.endpoint, operation.payload, signal)
+          const source = await openGatewayStream(this.services.gateway, this.services.version, operation.endpoint, operation.payload, signal, this.services.connection)
           let opening = true
           for await (const value of source) {
             if (signal.aborted) break
@@ -511,7 +515,7 @@ export class RemoteAdapter {
             const clientId = record(operation.payload.args)?.clientId
             if (typeof clientId !== 'string' || this.eventOwners.get(clientId) !== owner(context)) throw new Error('remote_event_owner_denied')
           }
-          const fetch = () => this.services.connection.createSharedFetchHandler('/api').fetch(new Request(
+          const fetch = () => connectionFetch(this.services.connection, new Request(
             `http://dsh.internal/api/${operation.endpoint}`, { method: 'POST', signal,
               headers: { 'content-type': 'application/json' },
               body: JSON.stringify({ type: 'client-request', rpcId: frame.id, method: operation.endpoint,

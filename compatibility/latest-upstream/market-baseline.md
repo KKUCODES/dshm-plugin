@@ -1,5 +1,7 @@
 # 插件市场基线与 alpha.2 双版本兼容
 
+本文保留2026-10-14发布基线，其中rc.2指 `0.2.0-rc.2`；当前独立分支的新范围与能力策略见[0.2.1-rc.2兼容说明](./dsh-rc21-compatibility.md)。
+
 - 状态：以下核心场景本地通过；[插件公开 Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.84-latest.0)与[新版 APK](https://github.com/KKUCODES/deepseek-harness-mobile/releases/tag/v0.1.0-preview.2)已发布，云端构建和匿名下载校验通过。
 - 维护角色：DSHM 插件与手机端维护者；核验日期：2026-10-14。
 - 来源：[版本白名单](../../src/profile-dsh-version.ts)、[共同安装包构建](../../scripts/build-github-package.mjs)、[实际安装验证器](../../scripts/verify-github-install.mjs)、[真实 Remote 验证器](../../scripts/verify-remote-baseline.mjs)、[Android 驱动](../../../dsh-mobile/tests/support/market-baseline-android.mjs)。

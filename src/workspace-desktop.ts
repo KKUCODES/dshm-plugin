@@ -3,6 +3,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-api-session-controller'
 import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
+import { connectionFetch } from './connection-fetch.js'
 import type { Operation } from '@dsh-mobile/protocol'
 
 export interface WorkspaceDesktopServices {
@@ -23,7 +24,7 @@ export class WorkspaceDesktop {
   private async stat(sessionId: string, path: string, signal: AbortSignal): Promise<File> {
     signal.throwIfAborted()
     const rpcId = randomUUID(), endpoint = 'workspaceFiles/stat'
-    const response = await this.connection.createSharedFetchHandler('/api').fetch(new Request(`http://dsh.internal/api/${endpoint}`, {
+    const response = await connectionFetch(this.connection, new Request(`http://dsh.internal/api/${endpoint}`, {
       method: 'POST', signal, headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ type: 'client-request', rpcId, method: endpoint, payload: { args: { workspaceFileScopeId: sessionId, path } } }),
     }))

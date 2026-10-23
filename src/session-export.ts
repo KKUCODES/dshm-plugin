@@ -1,4 +1,5 @@
 import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
+import { connectionFetch } from './connection-fetch.js'
 import { MAX_SESSION_EXPORT_BYTES, RESOURCE_CHUNK_BYTES, type HostFrame, type Operation } from '@dsh-mobile/protocol'
 import type { ResourceWindow } from './resource-window.js'
 
@@ -9,7 +10,7 @@ export async function streamSessionExport(connection: Pick<HostConnectionHandle,
   const url = new URL('/api/session.export', 'http://dsh.internal')
   url.searchParams.set('sessionId', operation.sessionId)
   url.searchParams.set('includeDescendants', String(operation.includeDescendants))
-  const response = await connection.createSharedFetchHandler('/api').fetch(new Request(url, { signal }))
+  const response = await connectionFetch(connection, new Request(url, { signal }))
   if (!response.ok || !response.body || response.headers.get('content-type')?.split(';')[0] !== 'application/zip') {
     await response.body?.cancel()
     throw new Error(response.status === 404 ? 'remote_export_missing' : 'remote_export_failed')

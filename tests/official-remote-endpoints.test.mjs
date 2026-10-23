@@ -20,7 +20,7 @@ await build({ entryPoints: [resolve(root, 'src/remote-adapter.ts')], outfile: en
   external: ['@deepseek-ai/*', 'ws', 'zod'], define: { DSHM_LATEST_CANDIDATE: 'true' } });
 const { RemoteAdapter } = await import(pathToFileURL(entry).href);
 
-for (const version of ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.1.6-alpha.2']) {
+for (const version of ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.2.1-rc.2', '0.1.6-alpha.2']) {
   test(`${version} 的协商和实际请求处理保留各自官方预设边界`, async () => {
     const calls = [];
     const hostId = randomUUID();
@@ -31,8 +31,9 @@ for (const version of ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.1.6-al
         calls.push({ endpoint: body.method, payload: body.payload });
         return Response.json({ type: 'server-response', rpcId: body.rpcId,
           result: { ok: true, value: { accepted: true } } });
-      } }) }, modules: { graph: () => ({ rev: 'test' }) },
-      gateway: { wireStream: { failure: error => { throw error; } } },
+      } }) }, modules: { graph: () => ({ rev: 'test', entries: [{ id: '@deepseek-ai/dsh-api-remotes' }],
+        batches: [{ phase: 'bootstrap', entries: ['@deepseek-ai/dsh-client-modules'] }] }), fetchBundle() {}, onGraphChanged() {} },
+      gateway: { wireStream: { open() {}, failure: error => { throw error; } } },
     }, hostId);
     const context = { hostId, deviceId: randomUUID(), connectionId: randomUUID(), management: true };
     const request = async operation => {

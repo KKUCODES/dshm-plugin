@@ -8,7 +8,7 @@ test('固定新版只转换已有有界读取参数，不改调用者对象和�
     args: { workspaceFileScopeId: 's', path: 'a.txt', options: { range: { offset: 2, length: 3 } } },
   })
   expect(payload).toEqual(before)
-  for (const version of ['0.1.6-alpha.2', '0.2.2'])
+  for (const version of ['0.1.6-alpha.2', '0.3.0'])
     expect(workspaceFilePayload(version, 'workspaceFiles/readBytes', payload)).toBe(payload)
   expect(workspaceFilePayload('0.2.1-alpha.1', 'workspaceFiles/stat', payload)).toBe(payload)
   const native = { args: { workspaceFileScopeId: 's', path: 'a.txt', options: { range: { offset: 0, length: 1 } } } }

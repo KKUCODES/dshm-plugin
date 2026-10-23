@@ -1,3 +1,3 @@
 import type { TypertGateway } from '@deepseek-ai/dsh-api-gateway/types';
-/** 本受限中继通过已有双侧授权后进入进程内 carrier；新版 undefined peer 保持官方 operator 语义。 */
-export declare function openGatewayStream(gateway: Pick<TypertGateway, 'wireStream'>, version: string, endpoint: string, payload: unknown, signal: AbortSignal): Promise<AsyncIterable<unknown>>;
+/** 双侧授权后使用官方进程内Peer；不接受手机提交或自行合成身份。 */
+export declare function openGatewayStream(gateway: Pick<TypertGateway, 'wireStream'>, version: string, endpoint: string, payload: unknown, signal: AbortSignal, connection?: object): Promise<AsyncIterable<unknown>>;

@@ -1,5 +1,6 @@
 import { isProfileDshVersion } from './profile-dsh-version.js'
 import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
+import { connectionFetch } from './connection-fetch.js'
 import { MAX_OFFICE_PDF_BYTES, RESOURCE_CHUNK_BYTES, officeMetadataSchema, type HostFrame } from '@dsh-mobile/protocol'
 import type { ResourceWindow } from './resource-window.js'
 import { officeFileResponse, workspaceFilePayload, workspaceFileResponse } from './workspace-file-contract.js'
@@ -8,7 +9,7 @@ import { officeFileResponse, workspaceFilePayload, workspaceFileResponse } from 
 export async function streamOffice(connection: Pick<HostConnectionHandle, 'createSharedFetchHandler'>,
   id: string, sessionId: string, path: string, signal: AbortSignal, window: ResourceWindow, emit: (frame: HostFrame) => void,
   priority: 'foreground' | 'background' = 'foreground', version = '0.1.6-alpha.2') {
-  const fetch = connection.createSharedFetchHandler('/api').fetch
+  const fetch = (request: Request) => connectionFetch(connection, request)
   const rpc = async (endpoint: string, args: Record<string, unknown>) => {
     const response = await fetch(new Request(`http://dsh.internal/api/${endpoint}`, { method: 'POST', signal,
       headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'client-request', rpcId: id, method: endpoint,

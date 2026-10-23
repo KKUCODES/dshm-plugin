@@ -1,5 +1,7 @@
 # 插件知识总目录
 
+DSH rc.2 修复分支：[范围、真实服务能力、原Peer和官方SDK类型限制](../../compatibility/latest-upstream/dsh-rc21-compatibility.md)。本地独立分支，尚未发布。
+
 Remote 缓存：[原模块资源指纹、只读基线差量及手机配套范围](../../compatibility/latest-upstream/remote-cache.md)。`0.1.85` 已公开预发布，配套 DSHM preview.4；原中转无需部署升级。
 
 [市场基线双版本验证](../../compatibility/latest-upstream/market-baseline.md)：官方 rc.2 与 alpha.2 共用 `0.1.84` Git 包，三版独立归档，真实协议/模型/审批与配套手机版本边界。只修改插件和 DSHM，不修改 DSH。
