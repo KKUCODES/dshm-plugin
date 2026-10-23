@@ -6,7 +6,7 @@
 
 官方 DSH `0.2.0-rc.2` / `0.2.1-alpha.2` / `0.2.1-rc.2` 可共用 GitHub 默认安装包，运行 `dsh plugin --profile web add github:KKUCODES/dshm-plugin`，无需下载归档或在用户电脑上编译。[GitHub 安装与固定提交](./github-install.md)说明当前版本、源码启动前缀和市场投稿方式。
 
-从 [0.1.86 Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.86-latest.0) 下载与电脑 DSH 版本一致的 `.tgz`，无需登录 GitHub。首页提供四版[直接下载链接](../README.md#安装插件并配对手机)。本次兼容修复配套使用 [DSHM 0.1.0-preview.6](https://github.com/KKUCODES/deepseek-harness-mobile/releases/tag/v0.1.0-preview.6)，现有中转服务无需升级。
+从 [0.1.87 Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.87-latest.0) 下载与电脑 DSH 版本一致的 `.tgz`，无需登录 GitHub。首页提供四版[直接下载链接](../README.md#安装插件并配对手机)。本次兼容修复配套使用 [DSHM 0.1.0-preview.7](https://github.com/KKUCODES/deepseek-harness-mobile/releases/tag/v0.1.0-preview.7)，自建中转也需升级到包含协议提交 `94183d0` 的版本，大响应能力需要三端配套。
 
 开发构建也可从 [Build plugin packages](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) 的成功构建中下载 Artifacts；此入口需要登录 GitHub，产物保留 30 天。
 

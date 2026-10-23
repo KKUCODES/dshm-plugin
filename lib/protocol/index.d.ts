@@ -1,4 +1,5 @@
 import { z } from 'zod';
+export * from './response-chunks.js';
 export { remotePresetIdSchema, presetManagementReadSchema, presetCopySchema, presetDeleteSchema, presetManagementViewSchema } from './remote-presets.js';
 export type { PresetCopy, PresetDelete } from './remote-presets.js';
 export { providerCreationWriteSchema, providerCreationViewSchema } from './remote-provider-creation.js';
@@ -1380,6 +1381,7 @@ export declare const clientFrameSchema: z.ZodDiscriminatedUnion<[z.ZodObject<{
         method: z.ZodLiteral<"session.cancel">;
         sessionId: z.ZodString;
     }, z.core.$strict>], "method">;
+    responseChunks: z.ZodOptional<z.ZodLiteral<1>>;
 }, z.core.$strict>, z.ZodObject<{
     type: z.ZodLiteral<"cancel">;
     id: z.ZodUUID;
@@ -1394,6 +1396,11 @@ export declare const clientFrameSchema: z.ZodDiscriminatedUnion<[z.ZodObject<{
 }, z.core.$strict>, z.ZodObject<{
     type: z.ZodLiteral<"uploadEnd">;
     id: z.ZodUUID;
+}, z.core.$strict>, z.ZodObject<{
+    type: z.ZodLiteral<"responseAck">;
+    index: z.ZodNumber;
+    id: z.ZodUUID;
+    transferId: z.ZodUUID;
 }, z.core.$strict>], "type">;
 export type ClientFrame = z.infer<typeof clientFrameSchema>;
 export declare const remoteContextSchema: z.ZodObject<{
@@ -2068,6 +2075,7 @@ export declare const routedFrameSchema: z.ZodDiscriminatedUnion<[z.ZodObject<{
         connectionId: z.ZodUUID;
         management: z.ZodBoolean;
     }, z.core.$strict>>;
+    responseChunks: z.ZodOptional<z.ZodLiteral<1>>;
 }, z.core.$strict>, z.ZodObject<{
     type: z.ZodLiteral<"cancel">;
     id: z.ZodUUID;
@@ -2082,6 +2090,11 @@ export declare const routedFrameSchema: z.ZodDiscriminatedUnion<[z.ZodObject<{
 }, z.core.$strict>, z.ZodObject<{
     type: z.ZodLiteral<"uploadEnd">;
     id: z.ZodUUID;
+}, z.core.$strict>, z.ZodObject<{
+    type: z.ZodLiteral<"responseAck">;
+    index: z.ZodNumber;
+    id: z.ZodUUID;
+    transferId: z.ZodUUID;
 }, z.core.$strict>], "type">;
 export declare const hostFrameSchema: z.ZodDiscriminatedUnion<[z.ZodObject<{
     type: z.ZodLiteral<"result">;
@@ -2098,6 +2111,26 @@ export declare const hostFrameSchema: z.ZodDiscriminatedUnion<[z.ZodObject<{
     type: z.ZodLiteral<"error">;
     id: z.ZodUUID;
     code: z.ZodString;
+}, z.core.$strict>, z.ZodObject<{
+    type: z.ZodLiteral<"responseStart">;
+    kind: z.ZodEnum<{
+        result: "result";
+        event: "event";
+    }>;
+    bytes: z.ZodNumber;
+    sha256: z.ZodString;
+    id: z.ZodUUID;
+    transferId: z.ZodUUID;
+}, z.core.$strict>, z.ZodObject<{
+    type: z.ZodLiteral<"responseChunk">;
+    index: z.ZodNumber;
+    data: z.ZodString;
+    id: z.ZodUUID;
+    transferId: z.ZodUUID;
+}, z.core.$strict>, z.ZodObject<{
+    type: z.ZodLiteral<"responseEnd">;
+    id: z.ZodUUID;
+    transferId: z.ZodUUID;
 }, z.core.$strict>], "type">;
 export type HostFrame = z.infer<typeof hostFrameSchema>;
 export declare const isStream: (operation: Operation) => boolean;

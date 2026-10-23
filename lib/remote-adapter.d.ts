@@ -83,7 +83,7 @@ export declare class RemoteAdapter {
     private desktopApps;
     private readonly cordis;
     constructor(services: RemoteServices, hostId: string, pluginOperations?: PluginOperations);
-    receive(raw: unknown, send: (frame: HostFrame) => void): Promise<void>;
+    receive(raw: unknown, send: (frame: HostFrame) => unknown): Promise<void>;
     private graphs;
     dispose(): void;
 }

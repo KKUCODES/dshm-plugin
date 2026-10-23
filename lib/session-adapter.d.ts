@@ -6,6 +6,6 @@ export declare class SessionAdapter {
     private service;
     private requests;
     constructor(service: SessionService);
-    receive(raw: unknown, send: (frame: HostFrame) => void): Promise<void>;
+    receive(raw: unknown, send: (frame: HostFrame) => unknown): Promise<void>;
     dispose(): void;
 }

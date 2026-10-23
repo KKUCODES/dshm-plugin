@@ -12,15 +12,15 @@ const address = (value: Extract<Operation, { method: 'session.follow' }>['addres
 export class SessionAdapter {
   private requests = new Map<string, AbortController>()
   constructor(private service: SessionService) {}
-  async receive(raw: unknown, send: (frame: HostFrame) => void): Promise<void> {
+  async receive(raw: unknown, send: (frame: HostFrame) => unknown): Promise<void> {
     const frame = clientFrameSchema.parse(raw)
     if (frame.type === 'cancel') { this.requests.get(frame.id)?.abort(); return }
-    if (frame.type === 'ack' || frame.type === 'uploadChunk' || frame.type === 'uploadEnd') return
+    if (frame.type === 'responseAck' || frame.type === 'ack' || frame.type === 'uploadChunk' || frame.type === 'uploadEnd') return
     if (this.requests.has(frame.id)) throw new Error('duplicate_request_id')
     if (this.requests.size >= 256) { send({ type: 'error', id: frame.id, code: 'host_capacity' }); return }
     const controller = new AbortController(), signal = controller.signal
     this.requests.set(frame.id, controller)
-    const emit = (value: HostFrame) => { if (!signal.aborted) send(value) }
+    const emit = (value: HostFrame) => { if (!signal.aborted) return send(value) }
     try {
       const operation = frame.operation
       if (operation.method.startsWith('remote.')) throw new Error('remote_transport_unavailable')
@@ -29,9 +29,9 @@ export class SessionAdapter {
           : this.service.follow({ address: address(operation.address), maxMessages: operation.maxMessages ?? 30, assistantStream: true }, signal)
         for await (const value of stream) {
           if (signal.aborted) break
-          emit({ type: 'event', id: frame.id, value })
+          await emit({ type: 'event', id: frame.id, value })
         }
-        emit({ type: 'end', id: frame.id })
+        await emit({ type: 'end', id: frame.id })
       } else {
         let value: unknown
         switch (operation.method) {
@@ -42,13 +42,13 @@ export class SessionAdapter {
             mode: operation.mode, content: [{ type: 'text', text: operation.text }] }, signal); break
           case 'session.cancel': value = this.service.cancel({ sessionId: brandString<SessionId>(operation.sessionId) }); break
         }
-        emit({ type: 'result', id: frame.id, value })
+        await emit({ type: 'result', id: frame.id, value })
       }
     } catch (error) {
       // 只转发已定义的机器错误码，避免把本地路径、凭据或堆栈发往公网。
       const code = error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
         && /^[a-z][a-z0-9_/-]{0,99}$/.test(error.code) ? error.code : 'session_operation_failed'
-      emit({ type: 'error', id: frame.id, code })
+      await emit({ type: 'error', id: frame.id, code })
     } finally { this.requests.delete(frame.id) }
   }
   dispose() { for (const controller of this.requests.values()) controller.abort(); this.requests.clear() }

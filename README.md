@@ -6,7 +6,7 @@
 
 **DSHM 插件**安装在电脑的官方 [DeepSeek Harness（DSH）](https://github.com/deepseek-ai/deepseek-harness) 中，将工作区、聊天会话、执行结果和审批同步到 [DSHM 安卓客户端](https://github.com/KKUCODES/deepseek-harness-mobile)。手机远程续聊与决策，电脑执行任务；无需修改或重建 DSH。
 
-[GitHub 一条命令安装](#安装插件并配对手机) · [下载插件包](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.86-latest.0) · [DSH 兼容清单](./compatibility/latest-upstream/official-support.md) · [常见问题](#常见问题)
+[GitHub 一条命令安装](#安装插件并配对手机) · [下载插件包](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.87-latest.0) · [DSH 兼容清单](./compatibility/latest-upstream/official-support.md) · [常见问题](#常见问题)
 
 <p align="center">
   <img src="./docs/images/logo.png" width="128" height="128" alt="DSHM Logo：DeepSeek 鲸鱼与手机、电脑双向连接">
@@ -39,16 +39,18 @@ dsh plugin --profile web add github:KKUCODES/dshm-plugin
 
 `dsh plugin` 是 DSH 官方命令。若你从 DSH 源码目录启动，使用 `pnpm dsh plugin --profile web add github:KKUCODES/dshm-plugin`。仓库包含预编译产物，安装时不需要编译器、相邻后端目录或额外构建许可；正式使用建议复制市场提供的 `#完整提交号` 命令，固定到已扫描版本。[GitHub 安装与版本说明](./docs/github-install.md)
 
-仓库默认安装包 `0.1.86-latest.0` 支持上述三个已验版本。alpha.1 仍需使用对应的 `.tgz`，不能使用默认命令。四个版本的插件包可从本次 Release 下载，直接下载无需登录 GitHub：
+仓库默认安装包 `0.1.87-latest.0` 支持上述三个已验版本。alpha.1 仍需使用对应的 `.tgz`，不能使用默认命令。四个版本的插件包可从本次 Release 下载，直接下载无需登录 GitHub：
 
 | 电脑 DSH 版本 | 直接下载 |
 | --- | --- |
-| `0.2.0-rc.2` | [rc.2 插件包](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.86-latest.0/dshm-plugin-0.1.86-latest.0-dsh-0.2.0-rc.2.tgz) |
-| `0.2.1-alpha.1` | [alpha.1 插件包](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.86-latest.0/dshm-plugin-0.1.86-latest.0-dsh-0.2.1-alpha.1.tgz) |
-| `0.2.1-rc.2` | [0.2.1-rc.2 插件包](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.86-latest.0/dshm-plugin-0.1.86-latest.0-dsh-0.2.1-rc.2.tgz) |
-| `0.2.1-alpha.2` | [alpha.2 插件包](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.86-latest.0/dshm-plugin-0.1.86-latest.0-dsh-0.2.1-alpha.2.tgz) |
+| `0.2.0-rc.2` | [rc.2 插件包](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.87-latest.0/dshm-plugin-0.1.87-latest.0-dsh-0.2.0-rc.2.tgz) |
+| `0.2.1-alpha.1` | [alpha.1 插件包](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.87-latest.0/dshm-plugin-0.1.87-latest.0-dsh-0.2.1-alpha.1.tgz) |
+| `0.2.1-rc.2` | [0.2.1-rc.2 插件包](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.87-latest.0/dshm-plugin-0.1.87-latest.0-dsh-0.2.1-rc.2.tgz) |
+| `0.2.1-alpha.2` | [alpha.2 插件包](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.87-latest.0/dshm-plugin-0.1.87-latest.0-dsh-0.2.1-alpha.2.tgz) |
 
-核心 Remote 请使用 [DSHM 0.1.0-preview.6 APK](https://github.com/KKUCODES/deepseek-harness-mobile/releases/download/v0.1.0-preview.6/DSHM-0.1.0-preview.6.apk)，三版核心连接已验；alpha.1 归档保留，不代表此 App 已完成其连接验证。[rc.2 验证范围](./compatibility/latest-upstream/dsh-rc21-compatibility.md) · [完整配对步骤](./docs/usage.md)
+核心 Remote 请使用 [DSHM 0.1.0-preview.7 APK](https://github.com/KKUCODES/deepseek-harness-mobile/releases/download/v0.1.0-preview.7/DSHM-0.1.0-preview.7.apk)，三版核心连接已验；alpha.1 归档保留，不代表此 App 已完成其连接验证。[rc.2 验证范围](./compatibility/latest-upstream/dsh-rc21-compatibility.md) · [完整配对步骤](./docs/usage.md)
+
+**0.1.87** 修复长聊天响应过大，配套 preview.7；自建中转也需升级到包含协议提交 `94183d0` 的版本。旧端继续小响应通信，大响应能力需要三端配套。[分块与兼容边界](./compatibility/latest-upstream/response-chunks.md)。
 
 1. 安装匹配 DSH 版本的插件，运行 `pnpm dsh web`；提示下次启动加载时，重启 DSH。
 2. 填写中转根地址、电脑名称，注册电脑并开启连接。
@@ -72,11 +74,11 @@ dsh plugin --profile web add github:KKUCODES/dshm-plugin
 
 ## 当前状态
 
-**0.1.86-latest.0** 新增 DSH `0.2.1-rc.2` 核心连接适配，改用兼容范围与真实接口能力检查；需配套 App preview.6。[修复与验证边界](./compatibility/latest-upstream/dsh-rc21-compatibility.md)。
+**0.1.87-latest.0** 新增 DSH `0.2.1-rc.2` 核心连接适配，改用兼容范围与真实接口能力检查；需配套 App preview.6。[修复与验证边界](./compatibility/latest-upstream/dsh-rc21-compatibility.md)。
 
 | 范围 | 版本与已验内容 |
 | --- | --- |
-| GitHub 安装 | `0.1.86-latest.0`，同一份预编译产物支持官方 DSH `0.2.0-rc.2` / `0.2.1-alpha.2` / `0.2.1-rc.2`；三版核心连接已验。[历史双版本记录](./compatibility/latest-upstream/market-baseline.md) |
+| GitHub 安装 | `0.1.87-latest.0`，同一份预编译产物支持官方 DSH `0.2.0-rc.2` / `0.2.1-alpha.2` / `0.2.1-rc.2`；三版核心连接已验。[历史双版本记录](./compatibility/latest-upstream/market-baseline.md) |
 | Release 下载 | 四个 DSH 版本归档及校验信息；按文件名选择电脑版本。[构建说明](./docs/releases.md) |
 | 修改服务地址 | `0.1.81-latest.0` 的[独立设置页验证](./compatibility/latest-upstream/gateway-settings.md)，不代表完整 Remote 重验。 |
 | 核心 Remote | 官方 DSH `0.2.1-alpha.2`＋插件 `0.1.80-latest.0`＋原配套 Android，在 Web + MuMu 完成本地验收。[支持清单](./compatibility/latest-upstream/official-support.md) |
@@ -89,7 +91,7 @@ dsh plugin --profile web add github:KKUCODES/dshm-plugin
 
 ### 应该选择哪个 DSH 版本的插件包？
 
-先查看电脑的 DSH 版本。GitHub 默认安装支持 `0.2.0-rc.2`、`0.2.1-alpha.2` 和 `0.2.1-rc.2`；下载 `.tgz` 时，包名中的 `dsh-<版本>` 必须对应电脑版本，例如 `dshm-plugin-0.1.86-latest.0-dsh-0.2.0-rc.2.tgz`。alpha.1 使用自己的归档。升级 DSH 后重新核对[兼容清单](./compatibility/latest-upstream/official-support.md)，不要把未验版本默认视为兼容。
+先查看电脑的 DSH 版本。GitHub 默认安装支持 `0.2.0-rc.2`、`0.2.1-alpha.2` 和 `0.2.1-rc.2`；下载 `.tgz` 时，包名中的 `dsh-<版本>` 必须对应电脑版本，例如 `dshm-plugin-0.1.87-latest.0-dsh-0.2.0-rc.2.tgz`。alpha.1 使用自己的归档。升级 DSH 后重新核对[兼容清单](./compatibility/latest-upstream/official-support.md)，不要把未验版本默认视为兼容。
 
 ### 配对链接发给手机后就能访问电脑吗？
 
