@@ -1,6 +1,6 @@
 # 插件知识总目录
 
-DSH rc.2 修复分支：[范围、真实服务能力、原Peer和官方SDK类型限制](../../compatibility/latest-upstream/dsh-rc21-compatibility.md)。本地独立分支，尚未发布。
+DSH rc.2 独立修复：[范围、真实服务能力、原Peer和官方SDK类型限制](../../compatibility/latest-upstream/dsh-rc21-compatibility.md)。0.1.86已公开预发布，配套App preview.6；四版云端构建与12附件匿名下载核验通过。
 
 Remote 缓存：[原模块资源指纹、只读基线差量及手机配套范围](../../compatibility/latest-upstream/remote-cache.md)。`0.1.85` 已公开预发布，配套 DSHM preview.4；原中转无需部署升级。
 
@@ -10,7 +10,7 @@ GitHub 安装与投稿：[官方一条命令、默认分支预编译产物与固
 
 开源许可：[MIT LICENSE](../../LICENSE)，版权署名 `2026 KKUCODES`；项目原创代码使用 MIT，第三方内容保留原许可。包声明及后续归档的许可证纳入[安装与投稿规则](../github-install.md#投稿)。
 
-自动构建与下载：[三个 DSH 版本的公开发行包、固定 SDK 和草稿发布流程](../releases.md)。`0.1.85` 已公开发布并完成九个附件的匿名下载校验；原本地与历史候选入口保持，CI 归档不代替真实 DSH 与 Android 兼容验收。
+自动构建与下载：[四个 DSH 版本的公开发行包、固定 SDK 和草稿发布流程](../releases.md)。`0.1.86` 已公开发布并完成12个附件的匿名下载校验；原本地与历史候选入口保持，CI归档不代替完整DSH与Android兼容验收。
 
 公开阅读入口：[项目首页](../../README.md)、[English](../../README.en.md)、[安装与使用](../usage.md)、[开发指南](../development.md)、[README 图片来源](../images/README.md)。首页只介绍产品和使用入口，构建与版本细节从独立指南进入；下方保留各阶段的技术依据。
 

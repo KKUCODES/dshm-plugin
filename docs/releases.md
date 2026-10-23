@@ -10,7 +10,7 @@
 
 开发构建也可从 [Build plugin packages](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) 的成功构建中下载 Artifacts；此入口需要登录 GitHub，产物保留 30 天。
 
-每轮分别生成官方 DSH `0.2.0-rc.2`、`0.2.1-alpha.1` 、`0.2.1-alpha.2` 和 `0.2.1-rc.2` 的 `.tgz`、SHA-256 与兼容元数据；alpha.1 保留独立 peer，其余采用兼容范围；仍按对应版本选择归档。构建通过不代表所有手机、模型和插件已兼容。
+每轮分别生成官方 DSH `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-alpha.2` 和 `0.2.1-rc.2` 的 `.tgz`、SHA-256 与兼容元数据；alpha.1 保留独立 peer，其余采用兼容范围；仍按对应版本选择归档。构建通过不代表所有手机、模型和插件已兼容。
 
 工作流创建未发布草稿，维护者检查后再公开发布；草稿不对普通用户开放。历史 `0.1.84-latest.0` 的三个插件包、校验文件与兼容信息保持，不覆盖旧附件。
 
@@ -31,6 +31,8 @@ GitHub 托管的 Ubuntu 24.04 + Node.js 24。后端协议从固定提交取得�
 维护来源：[工作流](../.github/workflows/plugin-build.yml)、[SDK 准备](../scripts/prepare-ci.mjs)、[打包入口](../scripts/build-ci-package.mjs)。
 
 ## 已核验范围
+
+2026-10-23 的[Actions](https://github.com/KKUCODES/dshm-plugin/actions/runs/39936382707)完成0.1.86四版构建、79文件GitHub载荷可重复检查及三版原官方DSH安装/Web启动/卸载，源码固定 `b6cb1ea2edb9ad0f9f8a6f05e85cf65171a9bf4c`。复用该次成功资产创建并公开[Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.86-latest.0)，没有再次打包。12个附件均已匿名GET200并核对SHA-256和GitHub资产摘要；四份归档各68文件，插件版本、MIT许可证、对应peer和入口均匹配，无旧插件适配分支的扩展声明。首轮rc.2因CI锁文件平台包嵌套失败，纠正位置后真实启动通过；[原因与边界](../compatibility/latest-upstream/dsh-rc21-compatibility.md)。配套App preview.6，中转无需升级。本机证据在手机项目忽略目录 `artifacts/release-tools/plugin/public-verification.json`；不扩大为全功能或真机验收。
 
 2026-10-15 的[版本发布 Actions](https://github.com/KKUCODES/dshm-plugin/actions/runs/38718058015)完成 `0.1.85-latest.0` 三版构建、GitHub 预编译载荷一致性以及 rc.2 / alpha.2 官方安装、Web 启动与卸载检查。固定源码为 `80c1fa30056582dfd4b90280ea0fb01b3c0761e8`，共享协议为 `056bf6f19527c58f456ee5f7eec55e715f401ab5`。草稿已公开发布；九个附件均匿名下载并核对 GitHub 资产摘要及校验文件。三份归档各有 66 个文件，版本、MIT 许可证和对应 DSH 依赖均匹配，没有修改 DSH 或构建 SDK。新缓存运行范围见[专项记录](../compatibility/latest-upstream/remote-cache.md)，不以打包通过代替真机或公网验收。
 
