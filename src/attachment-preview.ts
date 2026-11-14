@@ -1,11 +1,14 @@
-import type { SessionController } from '@deepseek-ai/dsh-api-session-controller'
-import type { AttachmentStore, FileAttachmentRef } from '@deepseek-ai/dsh-attachment'
+import type { SessionId } from '@deepseek-ai/dsh-session'
+import type { AttachmentStore, FileAttachmentRef, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { attachmentRefSchema, RESOURCE_CHUNK_BYTES, type HostFrame, type Operation } from '@dsh-mobile/protocol'
 import type { ResourceWindow } from './resource-window.js'
 
 export interface AttachmentServices {
-  sessions: Pick<SessionController, 'inspect' | 'attachment'>
+  sessions: {
+    inspect(sessionId: SessionId, signal: AbortSignal): Promise<{ events: readonly unknown[] }>
+    attachment(request: { sessionId: SessionId; attachmentId: FileAttachmentRef['attachmentId'] }, signal: AbortSignal): Promise<{ attachment: unknown; data: string }>
+  }
   store: Pick<AttachmentStore, 'readFileStream'>
 }
 export type AttachmentRequest = Omit<Extract<Operation, { method: 'remote.attachment' }>, 'method'>
@@ -15,20 +18,52 @@ const object = (value: unknown): Record<string, unknown> | undefined =>
 
 /** 只检查上游定义的消息内容位置；不把任意 JSON 中碰巧出现的 ID 当成授权。 */
 export function findFile(events: readonly unknown[], request: Pick<Request, 'attachmentId' | 'name'>): FileAttachmentRef {
-  const content = (value: unknown): FileAttachmentRef | undefined => {
+  const parsed = findReference(events, request.attachmentId, 'file', request.name)
+  if (typeof parsed.name !== 'string' || parsed.mediaType !== undefined) throw new Error('remote_attachment_invalid')
+  return { attachmentId: brandString<FileAttachmentRef['attachmentId']>(parsed.attachmentId), name: parsed.name, bytes: parsed.bytes }
+}
+
+export function findImage(events: readonly unknown[], attachmentId: string): ImageAttachmentRef {
+  const parsed = findReference(events, attachmentId, 'image')
+  const { mediaType, width, height, ...fields } = parsed
+  if (!mediaType || width === undefined || height === undefined || parsed.bytes > 16 * 1024 * 1024) throw new Error('remote_attachment_invalid')
+  return { ...fields, attachmentId: brandString<ImageAttachmentRef['attachmentId']>(attachmentId), mediaType, width, height }
+}
+
+function findReference(events: readonly unknown[], attachmentId: string, kind: 'file' | 'image', name?: string): ReturnType<typeof attachmentRefSchema.parse> {
+  const content = (value: unknown): ReturnType<typeof attachmentRefSchema.parse> | undefined => {
     if (!Array.isArray(value)) return
     for (const part of value) {
       const block = object(part), ref = object(block?.attachment)
-      if (block?.type === 'file' && ref?.attachmentId === request.attachmentId && ref.name === request.name) {
-        const parsed = attachmentRefSchema.parse(ref)
-        if (typeof parsed.name !== 'string' || parsed.mediaType !== undefined) throw new Error('remote_attachment_invalid')
-        return { attachmentId: brandString<FileAttachmentRef['attachmentId']>(parsed.attachmentId), name: parsed.name, bytes: parsed.bytes }
-      }
+      if (block?.type === kind && ref?.attachmentId === attachmentId && (name === undefined || ref.name === name)) return attachmentRefSchema.parse(ref)
       if (block?.type === 'tool-result') { const nested = content(block.content); if (nested) return nested }
     }
   }
   for (const event of events) {
-    const data = object(object(event)?.data)
+    const entry = object(event), data = object(entry?.data)
+    if (kind === 'image') {
+      // 沿用旧版 session/attachment 的第一方事件边界。
+      let ref: ReturnType<typeof attachmentRefSchema.parse> | undefined
+      switch (entry?.type) {
+        case 'user/message': case 'tool/ptc-dispatch': ref = content(data?.content); break
+        case 'system/message': case 'developer/message': case 'tool/result': case 'team/message/queued':
+          ref = content(object(data?.message)?.content); break
+        case 'agent/inbox/spliced':
+          if (Array.isArray(data?.inserted)) for (const item of data.inserted) { ref = content(object(item)?.content); if (ref) break }
+          break
+        case 'compaction/summary': ref = content(data?.summary) ?? content(data?.rawOutput); break
+        case 'assistant/message': case 'assistant/attempt':
+          if (entry.type === 'assistant/message') ref = content(object(data?.message)?.content)
+          if (!ref && Array.isArray(data?.stream)) for (const item of data.stream) {
+            const record = object(item), chunk = object(record?.chunk)
+            if (record?.type !== 'chunk' || chunk?.type !== 'block-end') continue
+            ref = content([chunk.block]); if (ref) break
+          }
+          break
+      }
+      if (ref) return ref
+      continue
+    }
     const ref = content(data?.content) ?? content(object(data?.message)?.content)
     if (ref) return ref
     if (Array.isArray(data?.inserted)) for (const item of data.inserted) { const inserted = content(object(item)?.content); if (inserted) return inserted }
@@ -38,12 +73,13 @@ export function findFile(events: readonly unknown[], request: Pick<Request, 'att
 
 /** 预览与电脑副本共用原会话归属和 provider；调用方必须读到 EOF 并完成 check。 */
 export async function attachmentSource(services: AttachmentServices, request: AttachmentRequest, signal: AbortSignal) {
-  const sessionId = brandString<Parameters<SessionController['inspect']>[0]>(request.sessionId)
+  const sessionId = brandString<SessionId>(request.sessionId)
   let ref: ReturnType<typeof attachmentRefSchema.parse>, chunks: AsyncIterable<Uint8Array>, check: () => Promise<void>
   signal.throwIfAborted()
   if (request.kind === 'image') {
     // 原接口负责 assistant 流、嵌套工具结果、上下文和历史日志中的图片引用判断。
-    const result = await services.sessions.attachment({ sessionId, attachmentId: brandString<FileAttachmentRef['attachmentId']>(request.attachmentId) })
+    const imageRequest = { sessionId, attachmentId: brandString<FileAttachmentRef['attachmentId']>(request.attachmentId) }
+    const result = await services.sessions.attachment(imageRequest, signal)
     signal.throwIfAborted()
     ref = attachmentRefSchema.parse(result.attachment)
     if (ref.attachmentId !== request.attachmentId || !ref.mediaType || ref.bytes > 16 * 1024 * 1024
@@ -52,9 +88,9 @@ export async function attachmentSource(services: AttachmentServices, request: At
     if (bytes.length !== ref.bytes || bytes.toString('base64') !== result.data) throw new Error('remote_attachment_invalid')
     chunks = (async function* () { yield bytes })()
     check = async () => {
-      const latest = await services.sessions.attachment({ sessionId, attachmentId: brandString<FileAttachmentRef['attachmentId']>(request.attachmentId) })
-      if (latest.attachment.attachmentId !== ref.attachmentId || latest.attachment.bytes !== ref.bytes
-        || latest.attachment.mediaType !== ref.mediaType) throw new Error('remote_attachment_invalid')
+      const latest = attachmentRefSchema.parse((await services.sessions.attachment(imageRequest, signal)).attachment)
+      if (latest.attachmentId !== ref.attachmentId || latest.bytes !== ref.bytes
+        || latest.mediaType !== ref.mediaType) throw new Error('remote_attachment_invalid')
       signal.throwIfAborted()
     }
   } else {

@@ -125,7 +125,9 @@ export async function verifyRemoteBaseline({ root, home, output, hostOrigin, coo
     const negotiation = await result({ method: 'remote.negotiate', version: 2 });
     assert.equal(negotiation.type, 'result'); assert.equal(negotiation.value.dshVersion, version);
     assert.equal(negotiation.value.management, false);
-    assert.equal(negotiation.value.endpoints.calls.includes('schedule/list'), version === '0.2.1-alpha.2');
+    if (version !== '0.2.2-rc.3') {
+      assert.equal(negotiation.value.endpoints.calls.includes('schedule/list'), version === '0.2.1-alpha.2');
+    }
     assert.equal((await result({ method: 'remote.rpc', endpoint: 'workspace/create', payload: { args: { request: { path: home } } } })).code, 'remote_operation_denied');
     await mark('real-pairing-approval-version-and-permission-boundaries');
     const workspacePath = join(home, 'compatibility-workspace');

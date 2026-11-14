@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { copyFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { sdkVariant } from './dsh-versions.mjs';
+import { githubDshVersion, sdkVariant } from './dsh-versions.mjs';
 
 const root = resolve(import.meta.dirname, '..');
-const version = process.env.DSHM_DSH_VERSION ?? '0.2.1-alpha.2';
+const version = process.env.DSHM_DSH_VERSION ?? githubDshVersion;
 assert.ok(process.env.npm_execpath, 'Run through npm run prepare:ci');
 const variant = sdkVariant(version);
 const runtime = resolve(root, 'artifacts/ci/sdk', variant);

@@ -11,23 +11,17 @@ import { githubDshVersions, githubPeerRange, sdkVariant } from './dsh-versions.m
 const root = resolve(import.meta.dirname, '..');
 const check = process.argv.includes('--check');
 assert.ok(process.argv.length === (check ? 3 : 2));
-const sdkRoot = resolve(root, 'artifacts/ci/sdk/alpha2');
+const sdkRoot = resolve(root, 'artifacts/ci/sdk', sdkVariant(githubDshVersion));
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 const release = JSON.parse(await readFile(join(root, 'ci/release.json'), 'utf8'));
 assert.equal(manifest.version, release.version);
 const built = await buildLatestCandidate('candidate', {
   targetVersion: githubDshVersion, candidateVersion: release.version, sdkRoot,
 });
-// 保留旧版SDK类型检查并构建各版运行候选；rc.2声明缺失的限制见候选构建器。
-for (const version of githubDshVersions) {
-  const candidate = version === githubDshVersion ? built : await buildLatestCandidate('candidate', {
-    targetVersion: version, candidateVersion: release.version, sdkRoot: resolve(root, 'artifacts/ci/sdk', sdkVariant(version)),
-  });
-  for (const name of Object.keys(candidate.manifest.peerDependencies)) {
-    const peerVersion = JSON.parse(await readFile(resolve(root, 'artifacts/ci/sdk', sdkVariant(version), 'node_modules', name, 'package.json'), 'utf8')).version;
-    assert.equal(manifest.peerDependencies[name], githubPeerRange(name), `Unexpected GitHub peer range: ${name}`);
-    assert.ok(semver.satisfies(peerVersion, manifest.peerDependencies[name]), `SDK peer is not covered: ${name}@${peerVersion}`);
-  }
+for (const name of Object.keys(built.manifest.peerDependencies)) {
+  const peerVersion = JSON.parse(await readFile(resolve(sdkRoot, 'node_modules', name, 'package.json'), 'utf8')).version;
+  assert.equal(manifest.peerDependencies[name], githubPeerRange(name), `Unexpected GitHub peer range: ${name}`);
+  assert.ok(semver.satisfies(peerVersion, manifest.peerDependencies[name]), `SDK peer is not covered: ${name}@${peerVersion}`);
 }
 const buildRoot = resolve(root, 'artifacts/github-package-build');
 await mkdir(buildRoot, { recursive: true });
@@ -61,11 +55,11 @@ for (const entry of await readdir(protocolTypes, { withFileTypes: true })) {
   const text = (await readFile(join(protocolTypes, entry.name), 'utf8')).replace(/\r\n/g, '\n');
   await writeFile(join(output, 'protocol', entry.name), text);
 }
-// 与 tgz 使用同一份隔离源码和 SDK；相对工作目录让路径注释保持稳定。
-await build({ absWorkingDir: built.snapshot, entryPoints: ['src/index.ts'], outfile: join(output, 'index.js'),
+// 隔离 SDK 用于类型检查；公开包从仓库源码构建，避免临时目录路径写入产物。
+await build({ absWorkingDir: root, entryPoints: ['src/index.ts'], outfile: join(output, 'index.js'),
   bundle: true, platform: 'node', target: 'node22', format: 'esm',
   external: ['@deepseek-ai/*', 'ws', 'zod'], define: { DSHM_LATEST_CANDIDATE: 'true' } });
-await build({ absWorkingDir: built.snapshot, entryPoints: ['src/client/index.tsx'], outfile: join(output, 'client.js'),
+await build({ absWorkingDir: root, entryPoints: ['src/client/index.tsx'], outfile: join(output, 'client.js'),
   bundle: true, platform: 'browser', target: 'es2022', format: 'cjs', external: ['react', 'react/jsx-runtime'],
   banner: { js: 'window.__ModuleLoader__.load({id:"@dsh-mobile/plugin",factory:(require)=>{var module={exports:{}};var exports=module.exports;' },
   footer: { js: 'return module.exports;}});' } });

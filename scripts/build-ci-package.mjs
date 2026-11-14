@@ -4,10 +4,10 @@ import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { buildLatestCandidate } from './build-latest-candidate.mjs';
-import { sdkVariant } from './dsh-versions.mjs';
+import { githubDshVersion, sdkVariant } from './dsh-versions.mjs';
 
 const root = resolve(import.meta.dirname, '..');
-const version = process.env.DSHM_DSH_VERSION ?? '0.2.1-alpha.2';
+const version = process.env.DSHM_DSH_VERSION ?? githubDshVersion;
 const release = JSON.parse(await readFile(resolve(root, 'ci/release.json'), 'utf8'));
 const candidateVersion = process.env.DSHM_PLUGIN_VERSION ?? release.version;
 assert.match(candidateVersion, /^0\.1\.\d+-latest\.0$/);

@@ -25,12 +25,6 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        dsh: ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.2.1-rc.2']
-    env:
-      DSHM_DSH_VERSION: ${{ matrix.dsh }}
     defaults:
       run:
         working-directory: plugin
@@ -63,24 +57,20 @@ jobs:
         run: |
           npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund
           npm run prepare:ci
-          if [ "$DSHM_DSH_VERSION" = "0.2.1-rc.2" ]; then DSHM_DSH_VERSION=0.2.1-alpha.2 npm run prepare:ci; fi
           npm run build:ci
       - name: Verify committed GitHub install package
-        if: matrix.dsh == '0.2.1-alpha.2'
         run: |
-          DSHM_DSH_VERSION=0.2.0-rc.2 npm run prepare:ci
-          DSHM_DSH_VERSION=0.2.1-rc.2 npm run prepare:ci
           npm run test:compat
           npm run test:github
           npm run build:github -- --check
       - name: Install into an unmodified official DSH and verify Web startup
-        if: matrix.dsh != '0.2.1-alpha.1'
         run: |
           npm install --global pnpm@11.7.0 --ignore-scripts --no-audit --no-fund
           npm run verify:github
+          npm run verify:github -- "artifacts/ci/packages/dshm-plugin-$DSHM_PLUGIN_VERSION-dsh-$DSHM_DSH_VERSION.tgz"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: dshm-plugin-${{ matrix.dsh }}
+          name: dshm-plugin-${{ env.DSHM_DSH_VERSION }}
           retention-days: 30
           if-no-files-found: error
           path: |

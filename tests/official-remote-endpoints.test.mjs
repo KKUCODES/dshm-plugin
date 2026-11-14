@@ -5,10 +5,10 @@ import { resolve } from 'node:path';
 import { test } from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
-import { sdkVariant } from '../scripts/dsh-versions.mjs';
+import { githubDshVersion, sdkVariant } from '../scripts/dsh-versions.mjs';
 
 const root = resolve(import.meta.dirname, '..');
-const sdk = resolve(root, 'artifacts/ci/sdk', sdkVariant(process.env.DSHM_DSH_VERSION ?? '0.2.1-alpha.2'));
+const sdk = resolve(root, 'artifacts/ci/sdk', sdkVariant(process.env.DSHM_DSH_VERSION ?? githubDshVersion));
 await access(resolve(sdk, 'node_modules/@deepseek-ai/dsh/package.json'));
 // 端点适配使用已准备的官方 SDK，避免从旧开发环境偶然取得未声明的 peer。
 const output = resolve(sdk, 'endpoint-policy-tests');
@@ -20,7 +20,7 @@ await build({ entryPoints: [resolve(root, 'src/remote-adapter.ts')], outfile: en
   external: ['@deepseek-ai/*', 'ws', 'zod'], define: { DSHM_LATEST_CANDIDATE: 'true' } });
 const { RemoteAdapter } = await import(pathToFileURL(entry).href);
 
-for (const version of ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.2.1-rc.2', '0.1.6-alpha.2']) {
+for (const version of [githubDshVersion, '0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.2.1-rc.2', '0.1.6-alpha.2']) {
   test(`${version} 的协商和实际请求处理保留各自官方预设边界`, async () => {
     const calls = [];
     const hostId = randomUUID();

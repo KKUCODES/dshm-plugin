@@ -10,6 +10,7 @@ import type {} from '@deepseek-ai/dsh-client-modules'
 import type {} from '@deepseek-ai/dsh-attachment'
 import type {} from '@deepseek-ai/dsh-office-to-pdf'
 import type {} from '@deepseek-ai/dsh-settings'
+import type {} from '@deepseek-ai/dsh-session-query'
 import { createRequire } from 'node:module'
 import { Management } from './management.js'
 import type { PluginConfig } from './config.js'
@@ -25,6 +26,7 @@ import { profileProviders } from './profile-providers.js'
 import type { LlmRuntime } from '@deepseek-ai/dsh-llm'
 import type { ProfilePresetEditor } from './profile-preset-directory.js'
 import { SubagentServiceState } from './subagent-service-state.js'
+import { findImage, type AttachmentServices } from './attachment-preview.js'
 
 export const name = 'dsh-mobile'
 export const inject = ['sessionController', 'credentials', 'connection', 'typertGateway', 'clientModules', 'attachments']
@@ -37,6 +39,24 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   const require = createRequire(import.meta.url)
   const version: string = require('@deepseek-ai/dsh-api-gateway/package.json').version
   const moduleVersion: string = require('@deepseek-ai/dsh-client-modules/package.json').version
+  const sessions = ctx.sessionController
+  const legacyInspect = Reflect.get(sessions, 'inspect') as AttachmentServices['sessions']['inspect'] | undefined
+  const legacyAttachment = sessions.attachment as unknown as AttachmentServices['sessions']['attachment']
+  const inspect: AttachmentServices['sessions']['inspect'] = async (id, signal) => {
+    signal.throwIfAborted()
+    if (typeof legacyInspect === 'function') return legacyInspect.call(sessions, id, signal)
+    const query = ctx.get('sessionQuery')
+    if (!query || typeof query.observeSession !== 'function') throw Error('remote_attachment_unavailable')
+    using snapshot = await query.observeSession(id, { signal, projectionMode: 'none' })
+    return { events: [...snapshot.events] }
+  }
+  const attachment: AttachmentServices['sessions']['attachment'] = async (request, signal) => {
+    if (typeof legacyInspect === 'function') return legacyAttachment.call(sessions, request, signal)
+    // New Host attachment reads do not establish Session ownership. Only pass a reference from the requested history.
+    const ref = findImage((await inspect(request.sessionId, signal)).events, request.attachmentId)
+    const stored = await ctx.attachments.readImage(ref, signal)
+    return { attachment: stored.ref, data: Buffer.from(stored.data).toString('base64') }
+  }
   const presetServices = () => {
     const presets = ctx.get('agentPresets'), editor = ctx.get('configEditor') as ProfilePresetEditor | undefined
     return presets && editor ? { presets, editor } : undefined
@@ -90,7 +110,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   const management = new Management(ctx.credentials, ctx.sessionController, config, {
     connection: ctx.connection, gateway: ctx.typertGateway, modules: ctx.clientModules,
     scheduleCatalog: () => !!ctx.get('typert')?.local.get('schedule/list'),
-    attachments: { sessions: ctx.sessionController, store: ctx.attachments },
+    attachments: { sessions: { inspect, attachment }, store: ctx.attachments },
     attachmentOffice: () => ctx.get('officeToPdf'),
     jobControl: () => jobControl,
     settings,

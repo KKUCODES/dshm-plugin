@@ -27,7 +27,8 @@ export async function streamAttachmentOffice(services: AttachmentServices, getPr
     upstream.throwIfAborted()
   }
   const result = await provider.convert({ extension: extension as OfficeExtension, priority: request.priority ?? 'foreground', source: {
-    key: brandString<OfficeSourceKey>(JSON.stringify(['dsh-mobile:attachment', request.sessionId, ref.attachmentId, ref.name])),
+    // The retained Office adapter and Host SDK may use different private brand symbols.
+    key: JSON.stringify(['dsh-mobile:attachment', request.sessionId, ref.attachmentId, ref.name]) as OfficeSourceKey,
     version, bytes: ref.bytes,
     // 原队列先预留容量再读源，不能在排队前缓存完整附件。
     read: async (upstream, maxBytes) => {

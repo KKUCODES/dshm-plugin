@@ -2,15 +2,16 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { githubDshVersion, githubDshVersions, githubPeerRange } from './dsh-versions.mjs';
+import { githubDshVersion, githubDshVersions, githubPeerRange, sdkVariant } from './dsh-versions.mjs';
 export { githubDshVersion, githubDshVersions } from './dsh-versions.mjs';
 
 /** Windows 与 CI 按同一文件顺序及换行计算发布输入，避免源码变更后仍安装旧产物。 */
 export async function githubSourceDigest(root) {
+  const variant = sdkVariant(githubDshVersion);
   const inputs = ['package.json', 'cordis.patch.yml', 'ci/release.json',
     'scripts/build-github-package.mjs', 'scripts/build-latest-candidate.mjs',
     'scripts/github-package.mjs', 'scripts/dsh-versions.mjs',
-    ...['rc2', 'alpha2', 'rc21'].flatMap(variant => [`ci/sdk/${variant}/package.json`, `ci/sdk/${variant}/package-lock.json`])];
+    `ci/sdk/${variant}/package.json`, `ci/sdk/${variant}/package-lock.json`];
   async function collect(relative) {
     for (const entry of (await readdir(join(root, relative), { withFileTypes: true })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)) {
       const path = `${relative}/${entry.name}`;

@@ -3,7 +3,7 @@ import { brandString } from '@deepseek-ai/dsh-brand'
 import type { FileAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import { expect, test } from 'vitest'
 import { type HostFrame, RESOURCE_CHUNK_BYTES } from '@dsh-mobile/protocol'
-import { streamAttachment, type AttachmentServices } from '../src/attachment-preview.js'
+import { findImage, streamAttachment, type AttachmentServices } from '../src/attachment-preview.js'
 import { ResourceWindow } from '../src/resource-window.js'
 
 const ref = { attachmentId: brandString<FileAttachmentRef['attachmentId']>('opaque-file-id'), name: 'original.txt', bytes: 7 * RESOURCE_CHUNK_BYTES + 13 }
@@ -78,4 +78,12 @@ test('图片使用原 Session attachment 授权，不按客户端文件名或存
   const denied: HostFrame[] = []
   await expect(streamAttachment(f.services, randomUUID(), { ...request, kind: 'image' }, new AbortController().signal, new ResourceWindow(), frame => denied.push(frame))).rejects.toThrow('not_referenced')
   expect(denied).toEqual([])
+})
+
+test('新版图片适配器只授权第一方会话记录实际引用的图片', () => {
+  const attachment = { attachmentId: ref.attachmentId, mediaType: 'image/png', bytes: 10, width: 1, height: 1 }
+  const block = { type: 'image', attachment }
+  expect(findImage([{ type: 'user/message', data: { content: [block] } }], ref.attachmentId)).toEqual(attachment)
+  expect(findImage([{ type: 'assistant/attempt', data: { stream: [{ type: 'chunk', chunk: { type: 'block-end', block } }] } }], ref.attachmentId)).toEqual(attachment)
+  expect(() => findImage([{ type: 'plugin/event', data: { content: [block] } }], ref.attachmentId)).toThrow('remote_attachment_not_referenced')
 })

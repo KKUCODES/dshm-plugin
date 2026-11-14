@@ -1,16 +1,14 @@
 {
-  "pluginVersion": "0.1.87-latest.0",
-  "dshVersion": "0.2.1-alpha.2",
+  "pluginVersion": "0.1.88-latest.0",
+  "dshVersion": "0.2.2-rc.3",
   "dshVersions": [
-    "0.2.0-rc.2",
-    "0.2.1-alpha.2",
-    "0.2.1-rc.2"
+    "0.2.2-rc.3"
   ],
-  "sourceDigest": "9272b2686022da4cb82fae71af3d08f53cde95171ef6d60df009f897ebb1b629",
+  "sourceDigest": "8b45af84a46be8b7bdd75b07a6e392768a397e601b038225b7e9c51236d52126",
   "files": {
     "lib/attachment-desktop.d.ts": "43c9702e5e0ecc381cee91f583328299765dcf7f45015ce3dfa0b2b1d836cb75",
     "lib/attachment-office.d.ts": "3b7b6fe6881c7d1900d381084b2b30b0270b9b2e3c19a01c2b52bf0f0c0c4d78",
-    "lib/attachment-preview.d.ts": "c7e7a77285f3c9f213e5426f226101854c7cd88e770d01793d7de35ac0d04390",
+    "lib/attachment-preview.d.ts": "3ada1a3202303a6908519f14c3e7a43f01d859d56cd1a86d9f765b77e2e01aca",
     "lib/changes-preview.d.ts": "be9e5f08777bedf001a4a0fcf96fc6ef143ad2d3634192e45c47673c326313af",
     "lib/client/feedback-sync-slot.d.ts": "5d4075abdda0d9af66bdaa9fb9911a59b0530316819b947fe14d0cf491d2f04e",
     "lib/client/feedback-sync.d.ts": "f68ec99b3708411aee8ca5d344e726302cbcf2747371b8f9a17632d25824ab87",
@@ -18,7 +16,7 @@
     "lib/client/pair-card.d.ts": "c7ca539235389975dca7082951623b2035fc826eaadce4c5426645daa24aca51",
     "lib/client/pair-link.d.ts": "217abda40e3908b34389899ebdf04ae882f7cd49ff508ff68989f3a80ed394ec",
     "lib/client/styles.d.ts": "eab51002309b6d0586c64ca501bc064b58986e7fdb6abc5385355d9a8efcec15",
-    "lib/client.js": "9cc3711f18e3ef48ef79a8ee8d4641fcbdaadd5a28c651c03072c70faeb8af1b",
+    "lib/client.js": "61e9a0367ab26f910c34bdc5d03dae1d34fb94ed1223bf035ea0d26ad4e735a8",
     "lib/command-output.d.ts": "c82c6466a1dfe36f8232afa4e526cf24f0e926dc3fb2fd9f3d935a2cb9aeb3c1",
     "lib/computer-endpoint.d.ts": "2608de1386037bd4781e7306af621316de868a9367f416e2a90d52f13195f30c",
     "lib/computer-key.d.ts": "a4db07dfa6ce4e7cbfdd1def146843868a11d8e61e81d370452a13ab09569a9c",
@@ -31,8 +29,8 @@
     "lib/feedback-events.d.ts": "5d0fe68a730f907476810179b11b2570450606720b88d8d8cdc9beb747eb39cc",
     "lib/feedback-notifications.d.ts": "5925dc625d946078fe8be7ac18b35d90af8a30abdc8513500deb7bcb90bd0685",
     "lib/gateway-stream.d.ts": "32934b900d57dbe31ab0eb6b018fc9ff6f23f92b434d591433ed1e1fb7972552",
-    "lib/index.d.ts": "c9103a3bb934f1bb05fb672b260fb93430902e8922cc8c03ede675f8a11def36",
-    "lib/index.js": "88470f6a0fe743585676ccda6f1d092e17aa3f5f7b9fa0e2a3385dc75e3e0511",
+    "lib/index.d.ts": "ebe208d9f6ca6e3e48c9707e69973ad8dfacc683a84a6514bbc3a670ac1a1c3a",
+    "lib/index.js": "aad1f9ae3ae6ef0fd540afe449a81f1b0887d9d8c3bec32913edaf154acde69b",
     "lib/job-control.d.ts": "01cd62406f55ca7bf28a66e2bee5480c2357fd33d1c44acec21ed7c0d8c6cbcf",
     "lib/job-output.d.ts": "1c01e94d9d48933570cd8d1308d48eac30a465666140c7fe05679e4c4b54588d",
     "lib/job-ring.d.ts": "3f10f4c4ae81710f0f50e6cfd3801ddc32e6764bdcb0ebe0c1f7ec12c9506fab",

@@ -9,7 +9,7 @@ import semver from 'semver';
 
 test('npm peer ranges admit current prereleases and future patches but stop at the next contract family', () => {
   const range = githubPeerRange('@deepseek-ai/dsh-client-modules');
-  for (const version of ['0.2.0-rc.2', '0.2.1-alpha.2', '0.2.1-rc.2', '0.2.1', '0.2.2'])
+  for (const version of ['0.2.0-rc.2', '0.2.1-alpha.2', '0.2.1-rc.2', '0.2.2-rc.3', '0.2.1', '0.2.2'])
     assert.equal(semver.satisfies(version, range), true);
   for (const version of ['0.2.0-rc.1', '0.3.0-alpha.1', '0.3.0']) assert.equal(semver.satisfies(version, range), false);
 });
@@ -29,12 +29,13 @@ async function fixture() {
       main: './lib/index.js', types: './lib/index.d.ts',
       exports: { '.': { default: './lib/index.js' }, './client': { default: './lib/client.js', types: './lib/client/index.d.ts' } },
       dsh: { bundle: { patch: './cordis.patch.yml' } },
-      peerDependencies: { '@deepseek-ai/dsh-api-gateway': '>=0.2.0-rc.2 <0.3.0-0 || >=0.2.1-alpha.1 <0.3.0-0' },
+      peerDependencies: { '@deepseek-ai/dsh-api-gateway': '>=0.2.0-rc.2 <0.3.0-0 || >=0.2.1-alpha.1 <0.3.0-0 || >=0.2.2-rc.3 <0.2.3-0' },
       devDependencies: { '@dsh-mobile/protocol': 'file:../backend/packages/protocol' } }),
     'ci/release.json': JSON.stringify({ version: '0.1.83-latest.0' }),
     'ci/sdk/alpha2/package.json': '{}', 'ci/sdk/alpha2/package-lock.json': '{}',
     'ci/sdk/rc2/package.json': '{}', 'ci/sdk/rc2/package-lock.json': '{}',
     'ci/sdk/rc21/package.json': '{}', 'ci/sdk/rc21/package-lock.json': '{}',
+    'ci/sdk/rc3/package.json': '{}', 'ci/sdk/rc3/package-lock.json': '{}',
     'scripts/build-github-package.mjs': '// build', 'scripts/build-latest-candidate.mjs': '// candidate',
     'scripts/github-package.mjs': '// inputs', 'scripts/dsh-versions.mjs': '// versions', 'src/index.ts': 'export default {};\n',
     'cordis.patch.yml': '- insert:\n    - id: dsh-mobile\n      name: "@dsh-mobile/plugin"\n',
@@ -49,14 +50,14 @@ async function fixture() {
   const inventory = Object.fromEntries(Object.entries(files).filter(([path]) => path.startsWith('lib/'))
     .map(([path, text]) => [path, createHash('sha256').update(text).digest('hex')]));
   await writeFile(join(root, 'lib/build-info.json'), JSON.stringify({ pluginVersion: '0.1.83-latest.0',
-    dshVersion: '0.2.1-alpha.2', dshVersions: ['0.2.0-rc.2', '0.2.1-alpha.2', '0.2.1-rc.2'],
+    dshVersion: '0.2.2-rc.3', dshVersions: ['0.2.2-rc.3'],
     sourceDigest: await githubSourceDigest(root), files: inventory }));
   return root;
 }
 
 test('a precompiled GitHub package validates without a sibling backend', async () => {
   const root = await fixture();
-  assert.equal((await validateGithubPackage(root)).dshVersion, '0.2.1-alpha.2');
+  assert.equal((await validateGithubPackage(root)).dshVersion, '0.2.2-rc.3');
   const before = await githubSourceDigest(root);
   await writeFile(join(root, 'src/index.ts'), 'export default {};\r\n');
   assert.equal(await githubSourceDigest(root), before);

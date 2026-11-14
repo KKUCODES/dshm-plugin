@@ -25,6 +25,7 @@ const target = resolve(runtime, relativeTarget);
 const declarationRoot = targetVersion === '0.2.1-rc.2' ? resolve(root, 'artifacts/ci/sdk/alpha2') : runtime;
 const snapshot = await mkdtemp(resolve(declarationRoot, 'candidate-build-'));
 await cp(resolve(root, 'src'), resolve(snapshot, 'src'), { recursive: true });
+await writeFile(resolve(snapshot, 'package.json'), '{"type":"module"}\n');
 await writeFile(resolve(snapshot, 'tsconfig.json'), JSON.stringify({ extends: resolve(root, 'tsconfig.json'),
   compilerOptions: { rootDir: 'src', outDir: resolve(target, 'dist'), noEmit: false, emitDeclarationOnly: true, sourceMap: false },
   include: ['src/**/*.ts', 'src/**/*.tsx'] }, null, 2) + '\n');
@@ -59,9 +60,11 @@ await copyFile(resolve(root, 'LICENSE'), resolve(target, 'LICENSE'));
 await copyFile(resolve(root, 'compatibility/latest-upstream/candidate-README.md'), resolve(target, 'README.md'));
 const host = await build({ entryPoints: [resolve(snapshot, 'src/index.ts')], outfile: resolve(target, 'dist/index.js'),
   bundle: true, platform: 'node', target: 'node22', format: 'esm', sourcemap: true,
+  nodePaths: [resolve(root, 'node_modules')],
   metafile: true, external: ['@deepseek-ai/*', 'ws', 'zod'], define: { DSHM_LATEST_CANDIDATE: 'true' } });
 await build({ entryPoints: [resolve(snapshot, 'src/client/index.tsx')], outfile: resolve(target, 'dist/client.js'),
   bundle: true, platform: 'browser', target: 'es2022', format: 'cjs', sourcemap: true, external: ['react', 'react/jsx-runtime'],
+  nodePaths: [resolve(root, 'node_modules')],
   banner: { js: 'window.__ModuleLoader__.load({id:"@dsh-mobile/plugin",factory:(require)=>{var module={exports:{}};var exports=module.exports;' },
   footer: { js: 'return module.exports;}});' } });
 return { target, snapshot, version, manifest, hostMetafile: host.metafile };

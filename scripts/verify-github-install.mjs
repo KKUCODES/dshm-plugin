@@ -4,17 +4,17 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { copyFile, mkdir, mkdtemp, readFile, realpath, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as wait } from 'node:timers/promises';
-import { validateGithubPackage, githubDshVersions } from './github-package.mjs';
+import { validateGithubPackage, githubDshVersion, githubDshVersions } from './github-package.mjs';
 import { sdkVariant } from './dsh-versions.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const base = resolve(root, 'artifacts/github-install');
 await mkdir(base, { recursive: true });
 const output = await mkdtemp(join(base, 'run-'));
-const targetVersion = process.env.DSHM_DSH_VERSION ?? '0.2.1-alpha.2';
+const targetVersion = process.env.DSHM_DSH_VERSION ?? githubDshVersion;
 assert.ok(githubDshVersions.includes(targetVersion));
 const cliRoot = resolve(process.env.DSHM_OFFICIAL_DSH_ROOT ?? join(root, 'artifacts/ci/sdk', sdkVariant(targetVersion)));
 const cli = join(cliRoot, 'node_modules/@deepseek-ai/dsh/lib/bin.js');
@@ -72,6 +72,8 @@ async function stopHost() {
 let hostDone;
 try {
   let spec = process.argv[2];
+  const packageName = `dshm-plugin-${expected.pluginVersion}-dsh-${targetVersion}.tgz`;
+  const archive = !!spec && basename(spec) === packageName;
   if (!spec) {
     const npmCli = process.env.npm_execpath;
     assert.ok(npmCli, 'Run local verification through npm run verify:github');
@@ -91,6 +93,10 @@ try {
     spec = `git+${pathToFileURL(repository).href}#${commit}`;
     report.gitCommit = commit;
     report.stages.push('standalone-git-payload');
+  } else if (archive) {
+    spec = resolve(spec);
+    const digest = createHash('sha256').update(await readFile(spec)).digest('hex');
+    assert.equal((await readFile(spec + '.sha256', 'utf8')).trim(), `${digest}  ${packageName}`);
   } else assert.match(spec, /^github:KKUCODES\/dshm-plugin#[a-f0-9]{40}$/);
   report.installSpec = spec;
   console.log(JSON.stringify({ stage: 'official-git-install', output }));
@@ -100,13 +106,22 @@ try {
   const installed = join(home, 'profiles/web/node_modules/@dsh-mobile/plugin');
   const manifest = JSON.parse(await readFile(join(installed, 'package.json'), 'utf8'));
   assert.equal(manifest.version, expected.pluginVersion);
-  assert.equal(manifest.main, './lib/index.js');
+  assert.equal(manifest.main, archive ? './dist/index.js' : './lib/index.js');
   assert.equal(manifest.license, 'MIT');
   assert.equal((await readFile(join(installed, 'LICENSE'), 'utf8')).replace(/\r\n/g, '\n'),
     (await readFile(join(root, 'LICENSE'), 'utf8')).replace(/\r\n/g, '\n'), 'Installed LICENSE must match the source');
-  const receipt = JSON.parse(await readFile(join(root, 'lib/build-info.json'), 'utf8'));
-  for (const [path, expectedHash] of Object.entries(receipt.files)) {
-    assert.equal(createHash('sha256').update(await readFile(join(installed, path))).digest('hex'), expectedHash, `Installed file differs: ${path}`);
+  if (archive) {
+    const extracted = join(output, 'verified-archive');
+    await mkdir(extracted);
+    await run('tar', ['-xzf', spec, '-C', extracted, '--strip-components=1']);
+    for (const path of [manifest.main, manifest.exports['./client'].default]) {
+      assert.deepEqual(await readFile(join(installed, path)), await readFile(join(extracted, path)), `Installed file differs: ${path}`);
+    }
+  } else {
+    const receipt = JSON.parse(await readFile(join(root, 'lib/build-info.json'), 'utf8'));
+    for (const [path, expectedHash] of Object.entries(receipt.files)) {
+      assert.equal(createHash('sha256').update(await readFile(join(installed, path))).digest('hex'), expectedHash, `Installed file differs: ${path}`);
+    }
   }
   const profile = JSON.parse(await readFile(join(home, 'profiles/web/package.json'), 'utf8'));
   assert.ok(profile.dsh.profile.bundles.includes('@dsh-mobile/plugin'));
