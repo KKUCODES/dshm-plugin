@@ -6,7 +6,7 @@
 
 **DSHM Plugin** runs inside official [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) on your computer, synchronizing workspaces, chat sessions, execution results, and approvals with the [DSHM Android client](https://github.com/KKUCODES/deepseek-harness-mobile/blob/main/README.en.md). Continue conversations and make decisions remotely while the computer executes tasks. No DSH core modifications or rebuilds are required.
 
-[Install from GitHub](#install-the-plugin-and-pair-your-phone) · [Download plugin packages](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.87-latest.0) · [DSH compatibility (Chinese)](./compatibility/latest-upstream/official-support.md) · [FAQ](#faq)
+[Install from GitHub](#install-the-plugin-and-pair-your-phone) · [Download the plugin](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.88-latest.0) · [Tested DSH version (JSON)](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.88-latest.0/compatibility-0.2.2-rc.3.json) · [FAQ](#faq)
 
 <p align="center">
   <img src="./docs/images/logo.png" width="128" height="128" alt="DSHM logo: the DeepSeek whale with a two-way phone and computer connection">
@@ -29,28 +29,21 @@
 
 ## Install the plugin and pair your phone
 
-[Plugin builds and downloads (Chinese)](./docs/releases.md) · [GitHub Actions](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) · [Releases](https://github.com/KKUCODES/dshm-plugin/releases)
-
-**Official DSH `0.2.0-rc.2`, `0.2.1-alpha.2` and `0.2.1-rc.2` use the same GitHub package:**
+**For official DSH `0.2.2-rc.3`**, install the prebuilt plugin pinned to the `0.1.88-latest.0` release commit. From a DSH source checkout, prefix the command with `pnpm`.
 
 ```sh
-dsh plugin --profile web add github:KKUCODES/dshm-plugin
+dsh plugin --profile web add github:KKUCODES/dshm-plugin#5fb3f8e56ff3f839875d07e3cf2601754eea01d4
 ```
 
-`dsh plugin` is the official DSH command. From a DSH source checkout, use `pnpm dsh plugin --profile web add github:KKUCODES/dshm-plugin`. Compiled files are included: installation requires no compiler, adjacent backend checkout, or build-script approval. Prefer the market's command pinned with `#<full-commit-sha>` for a scanned version. [GitHub installation details (Chinese)](./docs/github-install.md)
+To install from a file, download the [plugin archive](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.88-latest.0/dshm-plugin-0.1.88-latest.0-dsh-0.2.2-rc.3.tgz) and its [SHA-256 checksum](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.88-latest.0/dshm-plugin-0.1.88-latest.0-dsh-0.2.2-rc.3.tgz.sha256). After verifying the checksum, pass the archive’s absolute path to DSH. Replace the example Windows path with yours.
 
-The default GitHub package, `0.1.87-latest.0`, supports these three tested versions. Alpha.1 still requires its separate `.tgz`. Update the App to preview.7 and the relay to include protocol commit `94183d0` for large responses. [Chunked-response support (Chinese)](./compatibility/latest-upstream/response-chunks.md). All four archives are available without a GitHub account:
+```sh
+dsh plugin --profile web add "C:/Downloads/dshm-plugin-0.1.88-latest.0-dsh-0.2.2-rc.3.tgz"
+```
 
-| Computer DSH version | Direct download |
-| --- | --- |
-| `0.2.0-rc.2` | [rc.2 plugin package](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.87-latest.0/dshm-plugin-0.1.87-latest.0-dsh-0.2.0-rc.2.tgz) |
-| `0.2.1-alpha.1` | [alpha.1 plugin package](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.87-latest.0/dshm-plugin-0.1.87-latest.0-dsh-0.2.1-alpha.1.tgz) |
-| `0.2.1-rc.2` | [0.2.1-rc.2 plugin package](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.87-latest.0/dshm-plugin-0.1.87-latest.0-dsh-0.2.1-rc.2.tgz) |
-| `0.2.1-alpha.2` | [alpha.2 plugin package](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.87-latest.0/dshm-plugin-0.1.87-latest.0-dsh-0.2.1-alpha.2.tgz) |
+For Remote, install [DSHM preview.22 for Android](https://github.com/KKUCODES/deepseek-harness-mobile/releases/tag/v0.1.0-preview.22), then pair the phone with your computer. For a self-hosted relay, large responses require protocol commit `94183d0` or later. [Relay compatibility (Chinese)](./compatibility/latest-upstream/response-chunks.md)
 
-Use [DSHM 0.1.0-preview.7](https://github.com/KKUCODES/deepseek-harness-mobile/releases/download/v0.1.0-preview.7/DSHM-0.1.0-preview.7.apk) for the three tested core connections. Alpha.1 retains its archive without a new App connection claim. [rc.2 validation (Chinese)](./compatibility/latest-upstream/dsh-rc21-compatibility.md) · [Pairing guide (Chinese)](./docs/usage.md)
-
-1. Install a plugin build matching your DSH version and run `pnpm dsh web`. Restart DSH if it says the plugin will load on the next start.
+1. Start DSH Web with `dsh web` (`pnpm dsh web` from a source checkout). If DSH is already running, restart it to load the plugin.
 2. Enter the relay's root URL and computer name, register the computer, and enable the connection.
 3. Claim the pairing link on your phone, then verify its fingerprint and approve it on the computer.
 4. Open an existing workspace on your phone to continue a conversation or start a new chat.
@@ -72,16 +65,7 @@ Canceling or failed verification keeps the original connection. A successful sav
 
 ## Current status
 
-**0.1.87-latest.0** adds core connectivity for **DSH `0.2.1-rc.2`**, with compatibility ranges and capability checks. Pair with App preview.6. See the [fix and validation scope (Chinese)](./compatibility/latest-upstream/dsh-rc21-compatibility.md).
-
-| Scope | Version and validated behavior |
-| --- | --- |
-| GitHub installation | `0.1.87-latest.0` shares one compiled package across official DSH `0.2.0-rc.2` / `0.2.1-alpha.2` / `0.2.1-rc.2`. Core connections passed; full validation remains scoped. [Evidence (Chinese)](./compatibility/latest-upstream/market-baseline.md) |
-| Release downloads | Four DSH-version archives and checksums; choose the filename matching your host. [Build guide (Chinese)](./docs/releases.md) |
-| Relay URL changes | [Separate settings-page validation (Chinese)](./compatibility/latest-upstream/gateway-settings.md) with `0.1.81-latest.0`; not a complete Remote rerun. |
-| Core Remote | Official DSH `0.2.1-alpha.2` + plugin `0.1.80-latest.0` + the original matching Android app, validated locally in Web + MuMu. [Support matrix (Chinese)](./compatibility/latest-upstream/official-support.md) |
-
-This is a public prerelease. Successful GitHub installation or packaging does not establish full phone compatibility for a new package. Electron, physical devices, the complete public-network path, and other versions, plugins, and models need separate validation.
+**0.1.88-latest.0** is a public prerelease for official DSH `0.2.2-rc.3`. The GitHub package and the release archive both passed installation and Web startup checks on that version. Remote runtime checks covered sending a message, receiving a model reply, approving or denying a tool request, and restoring history after reconnection. [Release notes (Chinese)](./ci/release-notes/0.1.88-latest.0.md) · [Installation checks](https://github.com/KKUCODES/dshm-plugin/actions/runs/44661018293)
 
 The phone does not create computer workspaces, accept manually entered commands, or forward computer localhost websites.
 
@@ -89,7 +73,7 @@ The phone does not create computer workspaces, accept manually entered commands,
 
 ### Which plugin package matches my DSH version?
 
-Check computer DSH's version. The default GitHub package supports `0.2.0-rc.2`, `0.2.1-alpha.2` and `0.2.1-rc.2`. For `.tgz` downloads, choose the exact matching `dsh-<version>` in the name; for example, `dshm-plugin-0.1.87-latest.0-dsh-0.2.0-rc.2.tgz` targets rc.2. Alpha.1 requires its own archive. Recheck the [compatibility report (Chinese)](./compatibility/latest-upstream/official-support.md) after updating DSH.
+Check the full DSH version on your computer. The only runtime-tested target for `0.1.88-latest.0` is `0.2.2-rc.3`. Earlier DSH versions have best-effort compatibility. If you use `0.2.0-rc.2`, `0.2.1-alpha.1`, `0.2.1-alpha.2`, or `0.2.1-rc.2`, the [previous 0.1.87 release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.87-latest.0) has a separate archive for each. Match the full version in the filename. [Current compatibility manifest](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.88-latest.0/compatibility-0.2.2-rc.3.json)
 
 ### Does claiming a pairing link immediately allow computer access?
 
@@ -101,7 +85,7 @@ No. Device approval allows chat and task operations. Managing computer workspace
 
 ## Development and documentation
 
-TypeScript + Cordis, with a React settings page. GitHub Actions prepares the pinned backend protocol and published SDK packages, builds separate archives for three DSH versions, and verifies the committed GitHub package against source. `lib/` provides installed entry points; `dist/` is only the legacy development output. See the [build guide (Chinese)](./docs/releases.md) and development guide.
+The plugin uses TypeScript and Cordis with a React settings page. GitHub Actions builds against the pinned relay protocol and the SDK for DSH `0.2.2-rc.3`, then checks the committed GitHub package against source. `lib/` contains the compiled installation files. [Build workflow](./.github/workflows/plugin-build.yml)
 
 ```text
 src/              Computer plugin, conversation adapter, and settings page
