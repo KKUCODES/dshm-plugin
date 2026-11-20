@@ -6,34 +6,30 @@ DSHM 插件装在电脑上的官方 DSH 中。手机用 DSHM 的 Remote 连接�
 
 | 部分 | 获取与版本选择 |
 | --- | --- |
-| 电脑 | 官方 DSH `0.2.0-rc.2` / `0.2.1-alpha.2`；alpha.1 仍保留独立归档。 |
-| 插件 | rc.2 / alpha.2 共用 GitHub 包 `0.1.85-latest.0`；[Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.85-latest.0)另提供三版精确匹配的归档，无需登录 GitHub。 |
-| 手机 | 从 [DSHM Releases](https://github.com/KKUCODES/deepseek-harness-mobile/releases) 下载已签名 Android 开发预览；使用前核对配套 DSH 与插件版本。 |
-| 中转 | 手机和电脑都能访问的 DSH Mobile 中转服务。 |
+| 电脑 | 官方 DSH `0.2.2-rc.3`，使用 Web profile。 |
+| 插件 | [DSHM 0.1.88-latest.0](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.88-latest.0)，可从固定 GitHub 提交或下载的插件包安装。 |
+| 手机 | [DSHM Android 0.1.0-preview.22](https://github.com/KKUCODES/deepseek-harness-mobile/releases/tag/v0.1.0-preview.22)，使用 Remote 模式。 |
+| 中转 | 手机和电脑均可访问的 DSHM 中转。自建中转需包含协议提交 `94183d0` 或后续版本，才能传输大响应。 |
 
-连接 rc.2 需要包含本次兼容更新的手机端；公开 `0.1.0-preview.1` APK 仍仅连接 alpha.2。[当前双版本范围与配套要求](../compatibility/latest-upstream/market-baseline.md)。
-
-插件 `0.1.85-latest.0` 已[公开发布](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.85-latest.0)，三版归档可直接下载，无需登录 GitHub；完整缓存优化需配套 DSHM `0.1.0-preview.4`。GitHub 安装也不需要下载 Actions 产物或登录 GitHub，安装细节见 [GitHub 安装说明](./github-install.md)；归档下载与开发产物保留期限见[插件下载说明](./releases.md)。新版本的安装或打包不计作全量手机兼容验收。核心 Remote 的完整本地证据对应 `0.1.80-latest.0`＋官方 DSH `0.2.1-alpha.2`＋原配套 Android；`0.1.81-latest.0` 的[地址修改专项](../compatibility/latest-upstream/gateway-settings.md)另行记录。具体范围见[当前支持清单](../compatibility/latest-upstream/official-support.md)，历史归档安装见[本地安装记录](../compatibility/latest-upstream/official-installation.md)。
-
-包名中的 DSH 版本必须与电脑一致，不要混装或直接换成任意更新版本。alpha.1 构建包不沿用 alpha.2 的完整手机验收结论。取得下面示例包仅说明可以开始安装和联调，不代表该下载组合已经完成上述所有验收。
+先核对电脑上的完整 DSH 版本。使用旧版 DSH 时，请按版本选择[历史归档](./releases.md)，各版实际验收范围见[兼容清单](../compatibility/latest-upstream/official-support.md)。
 
 ## 1. 安装插件
 
-官方 DSH rc.2 / alpha.2 可以直接使用它原有的命令：
+在电脑上运行以下命令，安装固定到发行提交的插件并启动 DSH Web。
 
 ```sh
-dsh plugin --profile web add github:KKUCODES/dshm-plugin
+dsh plugin --profile web add github:KKUCODES/dshm-plugin#5fb3f8e56ff3f839875d07e3cf2601754eea01d4
 dsh web
 ```
 
-如果你在 DSH 源码目录运行 `pnpm dsh web`，安装命令也加上 `pnpm` 前缀。正式使用优先复制市场给出的固定提交命令。alpha.1 必须下载其对应归档；例如取得匹配 alpha.2 的 `.tgz` 后，也可从 DSH 项目目录执行：
+从 DSH 源码目录运行时，在两条命令前加 `pnpm`。如需从文件安装，可从[下载页](./releases.md)获取插件包和 SHA-256 校验文件。核对后使用归档的绝对路径，以下 Windows 示例中的路径请换成实际下载位置。
 
 ```powershell
-pnpm dsh plugin --profile web add 'C:\Downloads\dshm-plugin-0.1.85-latest.0-dsh-0.2.1-alpha.2.tgz'
-pnpm dsh web
+dsh plugin --profile web add "C:/Downloads/dshm-plugin-0.1.88-latest.0-dsh-0.2.2-rc.3.tgz"
+dsh web
 ```
 
-通过终端输出的登录链接打开 DSH。若安装时提示“下次启动后加载”，先在运行 DSH 的终端按 Ctrl+C，再执行原来的 `pnpm dsh web`。刷新网页或重启中转服务不会让旧 DSH 进程加载新插件。
+通过终端输出的登录链接打开 DSH。若提示“下次启动后加载”，在原终端停止 DSH，再用原启动命令重开。
 
 插件不包含 DSH 本体，不需要替换或重新构建官方 DSH。
 
@@ -79,7 +75,7 @@ node --env-file=.env.local packages/gateway/dist/main.js
 3. 电脑会显示等待批准的手机。对照手机显示的公钥指纹，勾选“我已核对设备公钥指纹”，点击“批准设备”。
 4. 手机上点击“我已在电脑批准”，打开已有工作区和会话。
 
-配对链接五分钟内有效，领取一次即失效。当前固定候选的电脑设置页提供链接；手机也可识别已有链接对应的二维码。开放注册不会跳过手机配对、身份校验或电脑批准。
+配对链接五分钟内有效，领取一次即失效。电脑插件设置页提供链接，手机也可识别已有链接对应的二维码。开放注册仍需手机配对与电脑批准。
 
 手机与电脑共同参与同一个会话。手机发消息、切换模型或答复审批，会作用于这份电脑会话；也可以在已有工作区创建新聊天。
 

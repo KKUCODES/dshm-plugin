@@ -4,33 +4,41 @@
 
 ## 下载插件
 
-官方 DSH `0.2.0-rc.2` / `0.2.1-alpha.2` / `0.2.1-rc.2` 可共用 GitHub 默认安装包，运行 `dsh plugin --profile web add github:KKUCODES/dshm-plugin`，无需下载归档或在用户电脑上编译。[GitHub 安装与固定提交](./github-install.md)说明当前版本、源码启动前缀和市场投稿方式。
+[DSHM 插件 0.1.88-latest.0](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.88-latest.0) 是公开预发布版，本次运行验收覆盖官方 DSH **`0.2.2-rc.3`**。可按[固定提交安装](./github-install.md)，也可直接下载下列发行附件。
 
-从 [0.1.87 Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.87-latest.0) 下载与电脑 DSH 版本一致的 `.tgz`，无需登录 GitHub。首页提供四版[直接下载链接](../README.md#安装插件并配对手机)。本次兼容修复配套使用 [DSHM 0.1.0-preview.7](https://github.com/KKUCODES/deepseek-harness-mobile/releases/tag/v0.1.0-preview.7)，自建中转也需升级到包含协议提交 `94183d0` 的版本，大响应能力需要三端配套。
+| 附件 | 用途 |
+| --- | --- |
+| [插件包（.tgz）](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.88-latest.0/dshm-plugin-0.1.88-latest.0-dsh-0.2.2-rc.3.tgz) | 下载后按[使用指南](./usage.md)用绝对路径安装。 |
+| [SHA-256 校验文件](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.88-latest.0/dshm-plugin-0.1.88-latest.0-dsh-0.2.2-rc.3.tgz.sha256) | 安装前核对下载文件的摘要。 |
+| [兼容清单（JSON）](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.88-latest.0/compatibility-0.2.2-rc.3.json) | 核对插件版本和 DSH 目标版本。 |
+
+手机端可使用 [DSHM preview.22](https://github.com/KKUCODES/deepseek-harness-mobile/releases/tag/v0.1.0-preview.22)。旧版 DSH `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-alpha.2` 和 `0.2.1-rc.2` 的独立归档见[历史发行 0.1.87](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.87-latest.0)，按文件名中的完整宿主版本选择。
 
 开发构建也可从 [Build plugin packages](https://github.com/KKUCODES/dshm-plugin/actions/workflows/plugin-build.yml) 的成功构建中下载 Artifacts；此入口需要登录 GitHub，产物保留 30 天。
 
-每轮分别生成官方 DSH `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-alpha.2` 和 `0.2.1-rc.2` 的 `.tgz`、SHA-256 与兼容元数据；alpha.1 保留独立 peer，其余采用兼容范围；仍按对应版本选择归档。构建通过不代表所有手机、模型和插件已兼容。
-
-工作流创建未发布草稿，维护者检查后再公开发布；草稿不对普通用户开放。历史 `0.1.84-latest.0` 的三个插件包、校验文件与兼容信息保持，不覆盖旧附件。
+本版 CI 仅构建 `0.2.2-rc.3` 的归档。工作流可以创建预发布草稿，维护者核对后公开。
 
 ## 运行与发版
 
-- 普通 `main` 提交与 PR 自动打包，不创建 Release。
-- GitHub 默认安装从 `main` 的 `lib/` 读取预编译产物；源码或发布输入变化后运行 `npm run build:github` 并一起提交。alpha.2 构建作业会重新编译、逐文件比较，拒绝源码与安装产物不一致。
+- 发往 `main` 的 PR 触发构建。在 `main` 上推送源码或工作流列出的发行输入时触发构建，仅修改文档的推送会跳过。
+- GitHub 安装使用已提交的 `lib/`。CI 按固定 SDK 重新构建比对，并通过官方安装器分别验证 Git 载荷和 `.tgz` 归档。
 - Actions → Build plugin packages → Run workflow 手动打包；勾选 `release_draft` 时创建预发布草稿。
-- 发版前同步 [ci/release.json](../ci/release.json)、包清单与锁文件的版本，并提供 `ci/release-notes/<版本>.md`。工作流按该提交读取发行说明；先推送主分支，再推送对应 `v<version>` 标签，标签必须与配置一致。
+- 发版前同步 [ci/release.json](../ci/release.json)、包清单、锁文件和 `ci/release-notes/<版本>.md`，将对应的 `v<version>` 标签指向发行提交。
 - 已公开的 Release 不覆盖；同一提交的草稿可以重跑更新。下一次版本使用新版本号。
 
 ## 构建来源
 
-GitHub 托管的 Ubuntu 24.04 + Node.js 24。后端协议从固定提交取得并只构建协议，四个官方 SDK 由本仓库的锁文件安装；使用 `npm ci --ignore-scripts`，不构建或修改 DSH 本体和 SDK。0.2.0-rc.2、alpha.2 和 0.2.1-rc.2 的锁文件包含官方 CLI 声明的 peer，供实际 Web 启动验证使用；alpha.1 保持历史类型构建环境。
+GitHub 托管环境为 Ubuntu 24.04 和 Node.js 24。工作流从[发行配置](../ci/release.json)读取后端提交，构建共享协议，然后按 [rc.3 SDK 锁文件](../ci/sdk/rc3/package-lock.json)安装官方依赖。
 
 本地已有环境与历史候选入口保持。CI 入口为 `npm run prepare:ci` 和 `npm run build:ci`，分别准备隔离 SDK 和生成归档；工作流还会先准备相邻 `backend/`。归档位于被忽略的 `artifacts/ci/`，SDK 配置与锁文件位于 `ci/sdk/`。`npm run build:github` 单独生成需提交的 `lib/`，不覆盖历史 `dist/` 开发输出。
 
 维护来源：[工作流](../.github/workflows/plugin-build.yml)、[SDK 准备](../scripts/prepare-ci.mjs)、[打包入口](../scripts/build-ci-package.mjs)。
 
 ## 已核验范围
+
+`0.1.88-latest.0` 对应提交 `5fb3f8e56ff3f839875d07e3cf2601754eea01d4`。公开归档的 SHA-256 为 `d7144a7a45fc26a21c1ec79804972938ec1f4843048651f62855481493cab309`。已核对发行校验文件，并在官方 DSH `0.2.2-rc.3` 安装公开归档、加载 Web 插件和卸载。[构建与安装检查](https://github.com/KKUCODES/dshm-plugin/actions/runs/44661018293) · [运行兼容范围](../compatibility/latest-upstream/official-support.md)
+
+### 历史发行验证
 
 2026-10-23 的[Actions](https://github.com/KKUCODES/dshm-plugin/actions/runs/39971220661)完成0.1.87四版构建、81文件GitHub载荷可重复检查，以及三版原官方DSH安装/Web启动/卸载；源码固定 `d4a47cbe709b5dd961a97edfaa8a7affd9d0870d`，协议固定 `94183d08ccbb8752d14c819608d79fe3870a9a60`。复用成功产物公开[Release](https://github.com/KKUCODES/dshm-plugin/releases/tag/v0.1.87-latest.0)，没有二次打包。12个附件均已匿名下载并核对SHA-256、GitHub摘要、对应peer、许可证与安装入口；无旧插件适配分支扩展声明。配套App preview.7；公共中转后续已升级并完成2.60MB分块、重连及旧端通信核验，见[公网升级记录](https://github.com/KKUCODES/dshm-relay/blob/main/deploy/public-server.md)，自建中转也需同步升级。证据在本机手机项目忽略目录 `artifacts/chunks-release/plugin/public-verification.json`；本轮发行与合成公网传输核验不代替[分块功能验证](../compatibility/latest-upstream/response-chunks.md)或任意真机/第三方插件验收。
 

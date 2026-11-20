@@ -1,8 +1,14 @@
-# 当前纯插件组合的兼容验收结论
+# 桌面插件兼容清单
 
-未发布的 `0.2.1-rc.2` 修复分支与类型/运行验证边界见[新版兼容专题](./dsh-rc21-compatibility.md)。下文保留已发布组合的完整功能验收，不自动沿用到rc.2。
+## 当前版本 0.1.88-latest.0
 
-当前 `0.1.84-latest.0` 已增加官方 `0.2.0-rc.2`，同时保留 `0.2.1-alpha.2`；共同安装包、真实模型/审批/重连和手机配套要求见[市场基线双版本验证](./market-baseline.md)。下方完整扩展矩阵仍对应原 `0.1.80` 的 alpha.2 组合，不将这次核心回归扩大为所有扩展重验。
+本版对未修改的官方 DSH **`0.2.2-rc.3`** 做过运行回归。GitHub 安装载荷和公开 `.tgz` 均已验证安装、Web 加载和卸载。Remote 的已验操作包括发送消息、接收模型回复、允许或拒绝工具请求，以及重连后读取历史。旧版 DSH 按代码尽力兼容，各自的运行证据归入对应历史版本。
+
+核验日期为 2026-11-20，维护者为 DSHM 插件维护者。[发行兼容元数据](https://github.com/KKUCODES/dshm-plugin/releases/download/v0.1.88-latest.0/compatibility-0.2.2-rc.3.json) · [安装检查](https://github.com/KKUCODES/dshm-plugin/actions/runs/44661018293) · [发行说明](../../ci/release-notes/0.1.88-latest.0.md) · [下载与安装](../../docs/releases.md)
+
+## 历史版本验收
+
+官方 DSH `0.2.1-rc.2` 的适配与验证见[兼容专题](./dsh-rc21-compatibility.md)。插件 `0.1.84-latest.0` 在 `0.2.0-rc.2` 和 `0.2.1-alpha.2` 上的核心回归见[双版本验证](./market-baseline.md)。以下完整功能矩阵及限制对应当时的 `0.1.80-latest.0` 和官方 alpha.2 组合。
 
 - 状态：下列固定组合的本地兼容验收完成；这是未发布的本地候选。
 - 维护角色：DSHM 插件与手机端维护者；核验日期：2026-10-10。

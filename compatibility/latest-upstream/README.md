@@ -1,6 +1,10 @@
 # 官方 DSH 兼容检查
 
-当前纯插件工作从[alpha.2新版复验](./official-alpha2.md)进入：正常官方插件加载、生产中转与真实Android核心聊天/选模/审批/新建/重连已通过，其余扩展分别核验。[公开接口与依赖审查](./official-plugin-only.md)保留alpha.1边界及原始依据。
+当前插件 `0.1.88-latest.0` 对应官方 DSH `0.2.2-rc.3`，安装选择与运行范围见[支持清单](./official-support.md)。
+
+## 历史兼容记录
+
+[alpha.2 复验](./official-alpha2.md)记录当时的官方插件加载、中转与 Android 核心操作；[公开接口与依赖审查](./official-plugin-only.md)保留 alpha.1 的边界及原始依据。
 
 > 2026-10-09 起按[纯插件交付决定](../../../docs/project-knowledge/knowledge/decisions/2026-10-09-official-dsh-plugin-only.md)验证未修改的官方 DSH。此目录原本体补丁与改造载体结果保留为历史，不属于交付要求或当前通过证据。
 

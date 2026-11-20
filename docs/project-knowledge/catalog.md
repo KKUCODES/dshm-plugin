@@ -1,5 +1,9 @@
 # 插件知识总目录
 
+当前发行版 `0.1.88-latest.0` 对官方 DSH `0.2.2-rc.3` 做运行回归。[安装与配对](../usage.md) · [发行下载与校验](../releases.md) · [支持清单](../../compatibility/latest-upstream/official-support.md)
+
+以下技术记录按各自注明的版本查阅。
+
 长聊天修复：[通用分块发送、背压、协商与配套发布](../../compatibility/latest-upstream/response-chunks.md)。0.1.87与App preview.7已公开预发布，四版云端构建与12附件匿名核验通过；公共中转已升级并通过公网传输及旧端兼容，未混入插件适配分支，不修改DSH本体。
 
 DSH rc.2 独立修复：[范围、真实服务能力、原Peer和官方SDK类型限制](../../compatibility/latest-upstream/dsh-rc21-compatibility.md)。0.1.86已公开预发布，配套App preview.6；四版云端构建与12附件匿名下载核验通过。
@@ -12,7 +16,7 @@ GitHub 安装与投稿：[官方一条命令、默认分支预编译产物与固
 
 开源许可：[MIT LICENSE](../../LICENSE)，版权署名 `2026 KKUCODES`；项目原创代码使用 MIT，第三方内容保留原许可。包声明及后续归档的许可证纳入[安装与投稿规则](../github-install.md#投稿)。
 
-自动构建与下载：[四个 DSH 版本的公开发行包、固定 SDK 和草稿发布流程](../releases.md)。`0.1.86` 已公开发布并完成12个附件的匿名下载校验；原本地与历史候选入口保持，CI归档不代替完整DSH与Android兼容验收。
+自动构建与下载：[当前发行包、固定 SDK 和草稿流程](../releases.md)。`0.1.86` 的四版归档与 12 个附件核验保留在该页的历史发行记录中。
 
 公开阅读入口：[项目首页](../../README.md)、[English](../../README.en.md)、[安装与使用](../usage.md)、[开发指南](../development.md)、[README 图片来源](../images/README.md)。首页只介绍产品和使用入口，构建与版本细节从独立指南进入；下方保留各阶段的技术依据。
 
@@ -22,7 +26,7 @@ GitHub 安装与投稿：[官方一条命令、默认分支预编译产物与固
 
 中转地址修改：[同后端保留身份、新后端重新注册与失败保持](../../compatibility/latest-upstream/gateway-settings.md)，插件 `0.1.81-latest.0`。电脑设置页新增编辑、取消与两类确认；手机仍需使用新链接重新配对。独立专项不扩大此前完整手机能力的版本结论。
 
-当前交付入口与源码审查：[19项历史依赖、69个公开接口及源码/安装包对应关系](../../compatibility/latest-upstream/official-interface-audit.md)。两条已移除的预设管理协议声明已清理；默认构建仍为旧版基线，不能作为alpha.2交付。 交付卡片缺失已修复，计划/实际差异及电脑原生打开与定位已验。
+历史 alpha.2 交付入口与源码审查：[19项历史依赖、69个公开接口及源码/安装包对应关系](../../compatibility/latest-upstream/official-interface-audit.md)。两条已移除的预设管理协议声明已清理；默认构建仍为旧版基线，不能作为alpha.2交付。 交付卡片缺失已修复，计划/实际差异及电脑原生打开与定位已验。
 
 版本边界：独立插件候选 `0.1.80-latest.0` 已在未修改的官方预发布 `0.2.1-alpha.2`、正常 `pnpm dsh web` 和真实 Android 下通过核心聊天、模型同步、审批、新建及重连；完整文件分享接收、原生文件动作、历史分页与插件自适应设置也已验。已清理新版预设复制/删除的协议入口；其他专项按各自版本记录，86轮恢复核对的具体范围见[新版复验入口](../../compatibility/latest-upstream/official-alpha2.md)；版本、安装包、已取消能力及未验边界见[当前交付审查](../../compatibility/latest-upstream/official-delivery-audit.md)。不交付修改版DSH，历史补丁结果不作为当前兼容证据，当前固定组合的本地兼容验收结论见[当前支持清单](../../compatibility/latest-upstream/official-support.md)。 PTC程序及内层命令结果和手机停止已按专用范围验证。 手机技能搜索、说明预览和官方正文实际加载/真实回复已验。 一层可继续子会话的手机停止、单次中断结算及停止后续聊已验。 外部任务最终正文查看、无效子会话入口拒绝及当前APK真实核心整轮已验。 文件与聊天的双引用入口、实际读取和结构化草稿重连已验。
 
